@@ -1,13 +1,129 @@
 import type { FieldInputType } from "@ommr/shared";
 
-type JsonSchema = { title?: string; type?: string | string[]; format?: string; properties?: Record<string, JsonSchema>; required?: string[]; enum?: unknown[]; items?: JsonSchema; $ref?: string; anyOf?: JsonSchema[]; oneOf?: JsonSchema[]; $defs?: Record<string, JsonSchema>; definitions?: Record<string, JsonSchema>; components?: { schemas?: Record<string, JsonSchema> } };
-export type ParsedPydanticField = { name: string; label: string; dbType: string; inputType: FieldInputType; required: boolean; editable: boolean; sortable: boolean; filterable: boolean; showInList: boolean; showInForm: boolean; relation: { targetTable: string; relationType: "many-to-one"; displayField: string } | null };
-export type ParsedPydanticTable = { name: string; dbName: string; label: string; description: string | null; fields: ParsedPydanticField[] };
-export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] { const schema = input as JsonSchema; const schemas = extractSchemas(schema); return Object.entries(schemas).map(([fallbackName, modelSchema]) => { const tableName = toSnakeCase(modelSchema.title || fallbackName); const required = new Set(modelSchema.required ?? []); return { name: tableName, dbName: tableName, label: modelSchema.title || toTitle(tableName), description: null, fields: Object.entries(modelSchema.properties ?? {}).map(([fieldName, fieldSchema]) => { const resolved = resolveNullable(fieldSchema); const relation = getRelation(resolved); return { name: fieldName, label: toTitle(fieldName), dbType: getDbType(resolved), inputType: relation ? "select" : getInputType(resolved), required: required.has(fieldName), editable: fieldName !== "id" && !fieldName.endsWith("_at"), sortable: true, filterable: true, showInList: true, showInForm: fieldName !== "id" && !fieldName.endsWith("_at"), relation }; }) }; }); }
-function extractSchemas(schema: JsonSchema): Record<string, JsonSchema> { if (schema.components?.schemas) return schema.components.schemas; if (schema.$defs) return schema.$defs; if (schema.definitions) return schema.definitions; if (schema.type === "object" && schema.properties) return { [schema.title || "ImportedModel"]: schema }; throw new Error("Unsupported Pydantic schema format"); }
-function resolveNullable(schema: JsonSchema): JsonSchema { const variants = schema.anyOf ?? schema.oneOf; return variants?.find((variant) => variant.type !== "null") ?? schema; }
-function getRelation(schema: JsonSchema): ParsedPydanticField["relation"] { if (!schema.$ref) return null; const targetName = schema.$ref.split("/").pop(); return targetName ? { targetTable: toSnakeCase(targetName), relationType: "many-to-one", displayField: "id" } : null; }
-function getInputType(schema: JsonSchema): FieldInputType { if (schema.enum) return "select"; if (schema.type === "array") return "multiselect"; if (schema.format === "date-time") return "datetime"; if (schema.format === "date") return "date"; if (schema.format === "time") return "time"; if (schema.type === "integer" || schema.type === "number") return "number"; return "text"; }
-function getDbType(schema: JsonSchema): string { if (schema.$ref) return "relation"; if (schema.enum) return "enum"; if (schema.type === "array") return "array"; if (schema.format === "date-time") return "datetime"; if (schema.format === "date") return "date"; if (schema.format === "time") return "time"; if (schema.type === "integer") return "int"; if (schema.type === "number") return "decimal"; if (schema.type === "boolean") return "boolean"; return "str"; }
-function toSnakeCase(value: string) { return value.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/[\s-]+/g, "_").toLowerCase(); }
-function toTitle(value: string) { return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+type JsonSchema = {
+  title?: string;
+  type?: string | string[];
+  format?: string;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  enum?: unknown[];
+  items?: JsonSchema;
+  $ref?: string;
+  anyOf?: JsonSchema[];
+  oneOf?: JsonSchema[];
+  $defs?: Record<string, JsonSchema>;
+  definitions?: Record<string, JsonSchema>;
+  components?: { schemas?: Record<string, JsonSchema> };
+};
+export type ParsedPydanticField = {
+  name: string;
+  label: string;
+  dbType: string;
+  inputType: FieldInputType;
+  required: boolean;
+  editable: boolean;
+  sortable: boolean;
+  filterable: boolean;
+  showInList: boolean;
+  showInForm: boolean;
+  relation: {
+    targetTable: string;
+    relationType: "many-to-one";
+    displayField: string;
+  } | null;
+};
+export type ParsedPydanticTable = {
+  name: string;
+  dbName: string;
+  label: string;
+  description: string | null;
+  fields: ParsedPydanticField[];
+};
+export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
+  const schema = input as JsonSchema;
+  const schemas = extractSchemas(schema);
+  return Object.entries(schemas).map(([fallbackName, modelSchema]) => {
+    const tableName = toSnakeCase(modelSchema.title || fallbackName);
+    const required = new Set(modelSchema.required ?? []);
+    return {
+      name: tableName,
+      dbName: tableName,
+      label: modelSchema.title || toTitle(tableName),
+      description: null,
+      fields: Object.entries(modelSchema.properties ?? {}).map(
+        ([fieldName, fieldSchema]) => {
+          const resolved = resolveNullable(fieldSchema);
+          const relation = getRelation(resolved);
+          return {
+            name: fieldName,
+            label: toTitle(fieldName),
+            dbType: getDbType(resolved),
+            inputType: relation ? "select" : getInputType(resolved),
+            required: required.has(fieldName),
+            editable: fieldName !== "id" && !fieldName.endsWith("_at"),
+            sortable: true,
+            filterable: true,
+            showInList: true,
+            showInForm: fieldName !== "id" && !fieldName.endsWith("_at"),
+            relation,
+          };
+        },
+      ),
+    };
+  });
+}
+function extractSchemas(schema: JsonSchema): Record<string, JsonSchema> {
+  if (schema.components?.schemas) return schema.components.schemas;
+  if (schema.$defs) return schema.$defs;
+  if (schema.definitions) return schema.definitions;
+  if (schema.type === "object" && schema.properties)
+    return { [schema.title || "ImportedModel"]: schema };
+  throw new Error("Unsupported Pydantic schema format");
+}
+function resolveNullable(schema: JsonSchema): JsonSchema {
+  const variants = schema.anyOf ?? schema.oneOf;
+  return variants?.find((variant) => variant.type !== "null") ?? schema;
+}
+function getRelation(schema: JsonSchema): ParsedPydanticField["relation"] {
+  if (!schema.$ref) return null;
+  const targetName = schema.$ref.split("/").pop();
+  return targetName
+    ? {
+        targetTable: toSnakeCase(targetName),
+        relationType: "many-to-one",
+        displayField: "id",
+      }
+    : null;
+}
+function getInputType(schema: JsonSchema): FieldInputType {
+  if (schema.enum) return "select";
+  if (schema.type === "array") return "multiselect";
+  if (schema.format === "date-time") return "datetime";
+  if (schema.format === "date") return "date";
+  if (schema.format === "time") return "time";
+  if (schema.type === "integer" || schema.type === "number") return "number";
+  return "text";
+}
+function getDbType(schema: JsonSchema): string {
+  if (schema.$ref) return "relation";
+  if (schema.enum) return "enum";
+  if (schema.type === "array") return "array";
+  if (schema.format === "date-time") return "datetime";
+  if (schema.format === "date") return "date";
+  if (schema.format === "time") return "time";
+  if (schema.type === "integer") return "int";
+  if (schema.type === "number") return "decimal";
+  if (schema.type === "boolean") return "boolean";
+  return "str";
+}
+function toSnakeCase(value: string) {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[\s-]+/g, "_")
+    .toLowerCase();
+}
+function toTitle(value: string) {
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}

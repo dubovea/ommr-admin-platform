@@ -28,7 +28,7 @@ tablesRouter.get(
         updatedAt: adminTables.updatedAt,
         fieldsCount: sql<number>`cast(count(${adminFields.id}) as int)`,
         requiredFieldsCount: sql<number>`cast(sum(case when ${adminFields.required} then 1 else 0 end) as int)`,
-        relationsCount: sql<number>`cast(sum(case when ${adminFields.relation} is not null then 1 else 0 end) as int)`
+        relationsCount: sql<number>`cast(sum(case when ${adminFields.relation} is not null then 1 else 0 end) as int)`,
       })
       .from(adminTables)
       .leftJoin(adminFields, eq(adminTables.id, adminFields.tableId))
@@ -37,9 +37,9 @@ tablesRouter.get(
 
     res.json({
       data: tables,
-      total: tables.length
+      total: tables.length,
     });
-  })
+  }),
 );
 
 tablesRouter.get(
@@ -67,10 +67,10 @@ tablesRouter.get(
         fields,
         fieldsCount: fields.length,
         requiredFieldsCount: fields.filter((field) => field.required).length,
-        relationsCount: fields.filter((field) => field.relation).length
-      }
+        relationsCount: fields.filter((field) => field.relation).length,
+      },
     });
-  })
+  }),
 );
 
 tablesRouter.post(
@@ -78,13 +78,10 @@ tablesRouter.post(
   asyncHandler(async (req, res) => {
     const payload = createTableSchema.parse(req.body);
 
-    const [created] = await db
-      .insert(adminTables)
-      .values(payload)
-      .returning();
+    const [created] = await db.insert(adminTables).values(payload).returning();
 
     res.status(201).json({ data: created });
-  })
+  }),
 );
 
 tablesRouter.patch(
@@ -96,7 +93,7 @@ tablesRouter.patch(
       .update(adminTables)
       .set({
         ...payload,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(adminTables.id, req.params.id))
       .returning();
@@ -107,5 +104,5 @@ tablesRouter.patch(
     }
 
     res.json({ data: updated });
-  })
+  }),
 );

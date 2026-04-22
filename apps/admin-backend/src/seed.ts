@@ -1,5 +1,9 @@
 import "dotenv/config";
-import type { AdminTableStatus, FieldInputType, FieldRelationMeta } from "@ommr/shared";
+import type {
+  AdminTableStatus,
+  FieldInputType,
+  FieldRelationMeta,
+} from "@ommr/shared";
 import { db } from "./db/index.js";
 import { adminFields, adminTables } from "./db/schema.js";
 
@@ -39,12 +43,55 @@ const tables: SeedTable[] = [
     status: "needs_setup",
     sortOrder: 1,
     fields: [
-      { name: "id", label: "ID", dbType: "int", inputType: "number", required: true, editable: false, sortable: true, filterable: true, showInForm: false },
-      { name: "full_name", label: "ФИО", dbType: "str", inputType: "text", required: true, sortable: true, filterable: true },
-      { name: "email", label: "Email", dbType: "str", inputType: "text", required: true, sortable: true, filterable: true },
-      { name: "role", label: "Роль", dbType: "str", inputType: "select", required: true, filterable: true },
-      { name: "created_at", label: "Создан", dbType: "datetime", inputType: "datetime", required: true, editable: false, sortable: true, filterable: true, showInForm: false }
-    ]
+      {
+        name: "id",
+        label: "ID",
+        dbType: "int",
+        inputType: "number",
+        required: true,
+        editable: false,
+        sortable: true,
+        filterable: true,
+        showInForm: false,
+      },
+      {
+        name: "full_name",
+        label: "ФИО",
+        dbType: "str",
+        inputType: "text",
+        required: true,
+        sortable: true,
+        filterable: true,
+      },
+      {
+        name: "email",
+        label: "Email",
+        dbType: "str",
+        inputType: "text",
+        required: true,
+        sortable: true,
+        filterable: true,
+      },
+      {
+        name: "role",
+        label: "Роль",
+        dbType: "str",
+        inputType: "select",
+        required: true,
+        filterable: true,
+      },
+      {
+        name: "created_at",
+        label: "Создан",
+        dbType: "datetime",
+        inputType: "datetime",
+        required: true,
+        editable: false,
+        sortable: true,
+        filterable: true,
+        showInForm: false,
+      },
+    ],
   },
   {
     name: "orders",
@@ -55,7 +102,17 @@ const tables: SeedTable[] = [
     status: "needs_setup",
     sortOrder: 2,
     fields: [
-      { name: "id", label: "ID", dbType: "int", inputType: "number", required: true, editable: false, sortable: true, filterable: true, showInForm: false },
+      {
+        name: "id",
+        label: "ID",
+        dbType: "int",
+        inputType: "number",
+        required: true,
+        editable: false,
+        sortable: true,
+        filterable: true,
+        showInForm: false,
+      },
       {
         name: "user_id",
         label: "Покупатель",
@@ -72,13 +129,41 @@ const tables: SeedTable[] = [
         relation: {
           targetTable: "users",
           relationType: "many-to-one",
-          displayField: "full_name"
-        }
+          displayField: "full_name",
+        },
       },
-      { name: "status", label: "Статус", dbType: "str", inputType: "select", required: true, editable: true, sortable: true, filterable: true },
-      { name: "total_amount", label: "Сумма", dbType: "decimal", inputType: "number", required: true, editable: true, sortable: true, filterable: true },
-      { name: "created_at", label: "Создан", dbType: "datetime", inputType: "datetime", required: true, editable: false, sortable: true, filterable: true, showInForm: false }
-    ]
+      {
+        name: "status",
+        label: "Статус",
+        dbType: "str",
+        inputType: "select",
+        required: true,
+        editable: true,
+        sortable: true,
+        filterable: true,
+      },
+      {
+        name: "total_amount",
+        label: "Сумма",
+        dbType: "decimal",
+        inputType: "number",
+        required: true,
+        editable: true,
+        sortable: true,
+        filterable: true,
+      },
+      {
+        name: "created_at",
+        label: "Создан",
+        dbType: "datetime",
+        inputType: "datetime",
+        required: true,
+        editable: false,
+        sortable: true,
+        filterable: true,
+        showInForm: false,
+      },
+    ],
   },
   {
     name: "products",
@@ -88,11 +173,49 @@ const tables: SeedTable[] = [
     status: "ready",
     sortOrder: 3,
     fields: [
-      { name: "id", label: "ID", dbType: "int", inputType: "number", required: true, editable: false, sortable: true, filterable: true, showInForm: false },
-      { name: "name", label: "Название", dbType: "str", inputType: "text", required: true, sortable: true, filterable: true },
-      { name: "price", label: "Цена", dbType: "decimal", inputType: "number", required: true, sortable: true, filterable: true },
-      { name: "category_id", label: "Категория", dbType: "int", inputType: "select", required: true, filterable: true, relation: { targetTable: "categories", relationType: "many-to-one", displayField: "name" } }
-    ]
+      {
+        name: "id",
+        label: "ID",
+        dbType: "int",
+        inputType: "number",
+        required: true,
+        editable: false,
+        sortable: true,
+        filterable: true,
+        showInForm: false,
+      },
+      {
+        name: "name",
+        label: "Название",
+        dbType: "str",
+        inputType: "text",
+        required: true,
+        sortable: true,
+        filterable: true,
+      },
+      {
+        name: "price",
+        label: "Цена",
+        dbType: "decimal",
+        inputType: "number",
+        required: true,
+        sortable: true,
+        filterable: true,
+      },
+      {
+        name: "category_id",
+        label: "Категория",
+        dbType: "int",
+        inputType: "select",
+        required: true,
+        filterable: true,
+        relation: {
+          targetTable: "categories",
+          relationType: "many-to-one",
+          displayField: "name",
+        },
+      },
+    ],
   },
   {
     name: "invoices",
@@ -102,10 +225,39 @@ const tables: SeedTable[] = [
     status: "draft",
     sortOrder: 4,
     fields: [
-      { name: "id", label: "ID", dbType: "int", inputType: "number", required: true, editable: false, sortable: true, filterable: true, showInForm: false },
-      { name: "order_id", label: "Заказ", dbType: "int", inputType: "select", required: true, relation: { targetTable: "orders", relationType: "many-to-one", displayField: "id" } },
-      { name: "invoice_date", label: "Дата счета", dbType: "date", inputType: "date", required: true, sortable: true, filterable: true }
-    ]
+      {
+        name: "id",
+        label: "ID",
+        dbType: "int",
+        inputType: "number",
+        required: true,
+        editable: false,
+        sortable: true,
+        filterable: true,
+        showInForm: false,
+      },
+      {
+        name: "order_id",
+        label: "Заказ",
+        dbType: "int",
+        inputType: "select",
+        required: true,
+        relation: {
+          targetTable: "orders",
+          relationType: "many-to-one",
+          displayField: "id",
+        },
+      },
+      {
+        name: "invoice_date",
+        label: "Дата счета",
+        dbType: "date",
+        inputType: "date",
+        required: true,
+        sortable: true,
+        filterable: true,
+      },
+    ],
   },
   {
     name: "categories",
@@ -115,10 +267,28 @@ const tables: SeedTable[] = [
     status: "needs_setup",
     sortOrder: 5,
     fields: [
-      { name: "id", label: "ID", dbType: "int", inputType: "number", required: true, editable: false, sortable: true, filterable: true, showInForm: false },
-      { name: "name", label: "Название", dbType: "str", inputType: "text", required: true, sortable: true, filterable: true }
-    ]
-  }
+      {
+        name: "id",
+        label: "ID",
+        dbType: "int",
+        inputType: "number",
+        required: true,
+        editable: false,
+        sortable: true,
+        filterable: true,
+        showInForm: false,
+      },
+      {
+        name: "name",
+        label: "Название",
+        dbType: "str",
+        inputType: "text",
+        required: true,
+        sortable: true,
+        filterable: true,
+      },
+    ],
+  },
 ];
 
 await db.delete(adminFields);
@@ -135,7 +305,7 @@ for (const table of tables) {
       icon: table.icon,
       status: table.status,
       source: "pydantic",
-      sortOrder: table.sortOrder
+      sortOrder: table.sortOrder,
     })
     .returning();
 
@@ -155,8 +325,8 @@ for (const table of tables) {
       placeholder: field.placeholder ?? null,
       helpText: field.helpText ?? null,
       relation: field.relation ?? null,
-      sortOrder: index + 1
-    }))
+      sortOrder: index + 1,
+    })),
   );
 }
 

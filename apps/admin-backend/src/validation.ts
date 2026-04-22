@@ -3,7 +3,7 @@ import {
   ADMIN_TABLE_SOURCES,
   ADMIN_TABLE_STATUSES,
   FIELD_INPUT_TYPES,
-  RELATION_TYPES
+  RELATION_TYPES,
 } from "@ommr/shared";
 
 export const fieldInputTypeSchema = z.enum(FIELD_INPUT_TYPES);
@@ -17,7 +17,7 @@ export const relationTypeSchema = z.enum(RELATION_TYPES);
 export const fieldRelationSchema = z.object({
   targetTable: z.string().min(1),
   relationType: relationTypeSchema,
-  displayField: z.string().min(1)
+  displayField: z.string().min(1),
 });
 
 export const updateTableSchema = z.object({
@@ -30,7 +30,7 @@ export const updateTableSchema = z.object({
   canList: z.boolean().optional(),
   canCreate: z.boolean().optional(),
   canEdit: z.boolean().optional(),
-  canDelete: z.boolean().optional()
+  canDelete: z.boolean().optional(),
 });
 
 export type UpdateTableDto = z.infer<typeof updateTableSchema>;
@@ -42,7 +42,7 @@ export const createTableSchema = z.object({
   description: z.string().nullable().optional(),
   status: tableStatusSchema.default("needs_setup"),
   source: tableSourceSchema.default("manual"),
-  icon: z.string().default("table")
+  icon: z.string().default("table"),
 });
 
 export type CreateTableDto = z.infer<typeof createTableSchema>;
@@ -59,7 +59,7 @@ export const updateFieldSchema = z.object({
   showInForm: z.boolean().optional(),
   placeholder: z.string().nullable().optional(),
   helpText: z.string().nullable().optional(),
-  relation: fieldRelationSchema.nullable().optional()
+  relation: fieldRelationSchema.nullable().optional(),
 });
 
 export type UpdateFieldDto = z.infer<typeof updateFieldSchema>;
@@ -75,7 +75,7 @@ export const createFieldSchema = z.object({
   sortable: z.boolean().default(false),
   filterable: z.boolean().default(false),
   showInList: z.boolean().default(true),
-  showInForm: z.boolean().default(true)
+  showInForm: z.boolean().default(true),
 });
 
 export type CreateFieldDto = z.infer<typeof createFieldSchema>;
