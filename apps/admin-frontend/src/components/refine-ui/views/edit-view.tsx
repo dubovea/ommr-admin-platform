@@ -1,59 +1,97 @@
-import type { ReactNode } from "react";
-import { Save } from "lucide-react";
-import { useNavigation } from "@refinedev/core";
+"use client";
+
+import { RefreshButton } from "@/components/refine-ui/buttons/refresh";
+import { Breadcrumb } from "@/components/refine-ui/layout/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-export function EditView({
-  children,
-  className,
-}: {
-  children: ReactNode;
+import {
+  useBack,
+  useResourceParams,
+  useUserFriendlyName,
+} from "@refinedev/core";
+import { ArrowLeftIcon } from "lucide-react";
+import type { PropsWithChildren } from "react";
+
+type EditViewProps = PropsWithChildren<{
   className?: string;
-}) {
-  return <div className={cn("space-y-5", className)}>{children}</div>;
-}
-export function EditViewHeader({
-  title,
-  resource = "tables",
-  onSave,
-  saving = false,
-  className,
-}: {
-  title: string;
-  resource?: string;
-  onSave?: () => void;
-  saving?: boolean;
-  className?: string;
-}) {
-  const { list } = useNavigation();
+}>;
+
+export function EditView({ children, className }: EditViewProps) {
   return (
-    <div className={cn("flex items-start justify-between gap-4", className)}>
-      <div>
-        <div className="mb-2 text-sm text-muted-foreground">
-          Таблицы / Редактирование таблицы
+    <div className={cn("flex flex-col", "gap-4", className)}>{children}</div>
+  );
+}
+
+type EditViewHeaderProps = PropsWithChildren<{
+  resource?: string;
+  title?: string;
+  wrapperClassName?: string;
+  headerClassName?: string;
+  actionsSlot?: React.ReactNode;
+}>;
+
+export const EditViewHeader = ({
+  resource: resourceFromProps,
+  title: titleFromProps,
+  actionsSlot,
+  wrapperClassName,
+  headerClassName,
+}: EditViewHeaderProps) => {
+  const back = useBack();
+
+  const getUserFriendlyName = useUserFriendlyName();
+
+  const { resource, identifier } = useResourceParams({
+    resource: resourceFromProps,
+  });
+  const { id: recordItemId } = useResourceParams();
+
+  const resourceName = resource?.name ?? identifier;
+
+  const title =
+    titleFromProps ??
+    getUserFriendlyName(
+      resource?.meta?.label ?? identifier ?? resource?.name,
+      "plural"
+    );
+
+  return (
+    <div className={cn("flex flex-col", "gap-4", wrapperClassName)}>
+      <div className="flex items-center relative gap-2">
+        <div className="bg-background z-[2] pr-4">
+          <Breadcrumb />
         </div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          <Badge
-            className="border-orange-200 bg-orange-50 text-orange-700"
-            variant="outline"
-          >
-            Черновик
-          </Badge>
-        </div>
+        <Separator className={cn("absolute", "left-0", "right-0", "z-[1]")} />
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={() => list(resource)}>
-          Назад
-        </Button>
-        {onSave ? (
-          <Button onClick={onSave} disabled={saving}>
-            <Save className="size-4" />
-            {saving ? "Сохранение..." : "Сохранить"}
+      <div
+        className={cn(
+          "flex",
+          "gap-1",
+          "items-center",
+          "justify-between",
+          "-ml-2.5",
+          headerClassName
+        )}
+      >
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={back}>
+            <ArrowLeftIcon className="h-4 w-4" />
           </Button>
-        ) : null}
+          <h2 className="text-2xl font-bold">{title}</h2>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {actionsSlot}
+          <RefreshButton
+            variant="outline"
+            recordItemId={recordItemId}
+            resource={resourceName}
+          />
+        </div>
       </div>
     </div>
   );
-}
+};
+
+EditView.displayName = "EditView";

@@ -1,14 +1,1 @@
-import { Button } from "@/components/ui/button";
-export function ErrorComponent() {
-  return (
-    <div className="grid min-h-[50vh] place-items-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold">Страница не найдена</h1>
-        <p className="mt-2 text-muted-foreground">Проверьте адрес страницы.</p>
-        <Button className="mt-4" onClick={() => history.back()}>
-          Назад
-        </Button>
-      </div>
-    </div>
-  );
-}
+import { Button } from "@/components/ui/button";export function ErrorComponent(){return <div className="grid min-h-[50vh] place-items-center"><div className="text-center"><h1 className="text-2xl font-semibold">Страница не найдена</h1><p className="mt-2 text-muted-foreground">Проверьте адрес страницы.</p><Button className="mt-4" onClick={()=>history.back()}>Назад</Button></div></div>}
