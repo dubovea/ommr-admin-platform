@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ommr-admin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ommr
+      POSTGRES_PASSWORD: ommr_password
+      POSTGRES_DB: ommr_admin
+    ports:
+      - "5433:5432"
+    volumes:
+      - ommr_admin_pg_data:/var/lib/postgresql/data
+
+volumes:
+  ommr_admin_pg_data:
