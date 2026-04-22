@@ -8,25 +8,30 @@ import {
   timestamp,
   uuid
 } from "drizzle-orm/pg-core";
+import {
+  ADMIN_TABLE_SOURCES,
+  ADMIN_TABLE_STATUSES,
+  FIELD_INPUT_TYPES,
+  type FieldRelationMeta
+} from "@ommr/shared";
 
-export const tableStatusEnum = pgEnum("table_status", [
-  "draft",
-  "needs_setup",
-  "ready",
-  "partial"
-]);
+const toPgEnumValues = <T extends readonly [string, ...string[]]>(values: T) =>
+  values as unknown as [T[number], ...T[number][]];
 
-export const tableSourceEnum = pgEnum("table_source", ["pydantic", "manual"]);
+export const tableStatusEnum = pgEnum(
+  "table_status",
+  toPgEnumValues(ADMIN_TABLE_STATUSES)
+);
 
-export const fieldInputTypeEnum = pgEnum("field_input_type", [
-  "text",
-  "number",
-  "date",
-  "time",
-  "datetime",
-  "select",
-  "multiselect"
-]);
+export const tableSourceEnum = pgEnum(
+  "table_source",
+  toPgEnumValues(ADMIN_TABLE_SOURCES)
+);
+
+export const fieldInputTypeEnum = pgEnum(
+  "field_input_type",
+  toPgEnumValues(FIELD_INPUT_TYPES)
+);
 
 export const adminTables = pgTable("admin_tables", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -75,14 +80,16 @@ export const adminFields = pgTable("admin_fields", {
   placeholder: text("placeholder"),
   helpText: text("help_text"),
 
-  relation: jsonb("relation").$type<{
-    targetTable: string;
-    relationType: "many-to-one" | "one-to-many" | "one-to-one" | "many-to-many";
-    displayField: string;
-  } | null>(),
+  relation: jsonb("relation").$type<FieldRelationMeta | null>(),
 
   sortOrder: integer("sort_order").notNull().default(0),
 
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 });
+
+export type AdminTableRow = typeof adminTables.$inferSelect;
+export type NewAdminTableRow = typeof adminTables.$inferInsert;
+
+export type AdminFieldRow = typeof adminFields.$inferSelect;
+export type NewAdminFieldRow = typeof adminFields.$inferInsert;

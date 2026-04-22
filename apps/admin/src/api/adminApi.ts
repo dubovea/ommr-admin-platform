@@ -1,4 +1,9 @@
-import type { AdminFieldMeta, AdminTableMeta } from "@ommr/shared";
+import type {
+  AdminFieldMeta,
+  AdminTableMeta,
+  UpdateAdminFieldInput,
+  UpdateAdminTableInput
+} from "@ommr/shared";
 
 const API_URL = "/api/admin";
 
@@ -30,7 +35,7 @@ export async function getTable(id: string): Promise<AdminTableMeta> {
 
 export async function updateTable(
   id: string,
-  payload: Partial<AdminTableMeta>
+  payload: UpdateAdminTableInput
 ): Promise<AdminTableMeta> {
   const response = await request<{ data: AdminTableMeta }>(`${API_URL}/tables/${id}`, {
     method: "PATCH",
@@ -42,7 +47,7 @@ export async function updateTable(
 
 export async function updateField(
   id: string,
-  payload: Partial<AdminFieldMeta>
+  payload: UpdateAdminFieldInput
 ): Promise<AdminFieldMeta> {
   const response = await request<{ data: AdminFieldMeta }>(`${API_URL}/fields/${id}`, {
     method: "PATCH",

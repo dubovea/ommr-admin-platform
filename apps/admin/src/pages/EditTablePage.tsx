@@ -4,9 +4,11 @@ import { useParams } from "react-router";
 import {
   FIELD_INPUT_TYPE_LABELS,
   FIELD_INPUT_TYPES,
+  type AdminFieldFlagKey,
   type AdminFieldMeta,
+  type AdminTableActionKey,
   type AdminTableMeta,
-  type FieldInputType
+  type RelationType
 } from "@ommr/shared";
 import { getTable, updateField, updateTable } from "../api/adminApi";
 
@@ -171,10 +173,7 @@ export function EditTablePage() {
                   ["canCreate", "Создание"],
                   ["canEdit", "Редактирование"],
                   ["canDelete", "Удаление"]
-                ] satisfies Array<[
-                  "canList" | "canCreate" | "canEdit" | "canDelete",
-                  string
-                ]>
+                ] satisfies Array<[AdminTableActionKey, string]>
               ).map(([key, label]) => (
                 <label className="toggle-row" key={key}>
                   <span>{label}</span>
@@ -362,10 +361,7 @@ function FieldInspector({
             ["editable", "Редактируемое поле"],
             ["showInList", "Показывать в таблице"],
             ["showInForm", "Показывать в форме"]
-          ] satisfies Array<[
-            "required" | "editable" | "showInList" | "showInForm",
-            string
-          ]>
+          ] satisfies Array<[AdminFieldFlagKey, string]>
         ).map(([key, label]) => (
           <label className="toggle-row" key={key}>
             <span>{label}</span>
@@ -410,7 +406,7 @@ function FieldInspector({
                 onChange({
                   relation: {
                     targetTable: field.relation?.targetTable ?? "users",
-                    relationType: event.target.value as "many-to-one",
+                    relationType: event.target.value as RelationType,
                     displayField: field.relation?.displayField ?? "full_name"
                   }
                 })

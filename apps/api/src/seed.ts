@@ -1,4 +1,5 @@
 import "dotenv/config";
+import type { AdminTableStatus, FieldInputType, FieldRelationMeta } from "@ommr/shared";
 import { db } from "./db/index.js";
 import { adminFields, adminTables } from "./db/schema.js";
 
@@ -6,7 +7,7 @@ type SeedField = {
   name: string;
   label: string;
   dbType: string;
-  inputType: "text" | "number" | "date" | "time" | "datetime" | "select" | "multiselect";
+  inputType: FieldInputType;
   required?: boolean;
   editable?: boolean;
   sortable?: boolean;
@@ -15,11 +16,7 @@ type SeedField = {
   showInForm?: boolean;
   placeholder?: string;
   helpText?: string;
-  relation?: {
-    targetTable: string;
-    relationType: "many-to-one" | "one-to-many" | "one-to-one" | "many-to-many";
-    displayField: string;
-  } | null;
+  relation?: FieldRelationMeta | null;
 };
 
 type SeedTable = {
@@ -28,7 +25,7 @@ type SeedTable = {
   label: string;
   description?: string;
   icon: string;
-  status: "draft" | "needs_setup" | "ready" | "partial";
+  status: AdminTableStatus;
   sortOrder: number;
   fields: SeedField[];
 };

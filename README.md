@@ -13,7 +13,7 @@
 
 ## Быстрый старт
 
-Проект настроен под **Yarn Modern 4.x**:
+Проект настроен под **Yarn Modern 4.x** и использует нормальные workspace-зависимости без относительных `file:../../...`:
 
 ```json
 "@ommr/shared": "workspace:*"
@@ -109,6 +109,26 @@ ommr-admin-platform
 └── tsconfig.base.json
 ```
 
+
+## Роль `packages/shared`
+
+`packages/shared` — единый источник для общих metadata-типов и enum-значений:
+
+- `FIELD_INPUT_TYPES`
+- `ADMIN_TABLE_STATUSES`
+- `ADMIN_TABLE_SOURCES`
+- `RELATION_TYPES`
+- `AdminTableMeta`
+- `AdminFieldMeta`
+- `FieldRelationMeta`
+
+Frontend использует эти типы для UI, dropdown-ов и подписей.
+
+Backend использует эти же значения в Zod validation и Drizzle enum-ах.
+
+Drizzle остаётся DB-схемой и описывает только физическую структуру PostgreSQL: таблицы, колонки, типы колонок, связи и defaults.
+
+
 ## Что уже сделано
 
 - базовая структура monorepo
@@ -122,6 +142,36 @@ ommr-admin-platform
   - экран редактирования
   - настройка полей
   - dropdown выбора типа поля
+
+
+## Финальная организация API
+
+Express entrypoint теперь отвечает только за middleware и подключение роутеров:
+
+```ts
+app.use("/api/admin", adminRouter);
+```
+
+Роутинг разнесён по файлам:
+
+```txt
+apps/api/src/routes/admin/index.ts
+apps/api/src/routes/admin/tables.routes.ts
+apps/api/src/routes/admin/fields.routes.ts
+```
+
+Ошибки обрабатываются через общий middleware:
+
+```txt
+apps/api/src/middlewares/error-handler.ts
+```
+
+Асинхронные обработчики завернуты в:
+
+```txt
+apps/api/src/lib/async-handler.ts
+```
+
 
 ## Что можно добавить дальше
 

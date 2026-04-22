@@ -20,7 +20,14 @@ export const FIELD_INPUT_TYPE_LABELS: Record<FieldInputType, string> = {
   multiselect: "Выпадающий список (мульти выбор)"
 };
 
-export type AdminTableStatus = "draft" | "needs_setup" | "ready" | "partial";
+export const ADMIN_TABLE_STATUSES = [
+  "draft",
+  "needs_setup",
+  "ready",
+  "partial"
+] as const;
+
+export type AdminTableStatus = (typeof ADMIN_TABLE_STATUSES)[number];
 
 export const ADMIN_TABLE_STATUS_LABELS: Record<AdminTableStatus, string> = {
   draft: "Черновик",
@@ -29,17 +36,38 @@ export const ADMIN_TABLE_STATUS_LABELS: Record<AdminTableStatus, string> = {
   partial: "Частично"
 };
 
-export type RelationType =
-  | "many-to-one"
-  | "one-to-many"
-  | "one-to-one"
-  | "many-to-many";
+export const ADMIN_TABLE_SOURCES = ["pydantic", "manual"] as const;
+
+export type AdminTableSource = (typeof ADMIN_TABLE_SOURCES)[number];
+
+export const RELATION_TYPES = [
+  "many-to-one",
+  "one-to-many",
+  "one-to-one",
+  "many-to-many"
+] as const;
+
+export type RelationType = (typeof RELATION_TYPES)[number];
 
 export type FieldRelationMeta = {
   targetTable: string;
   relationType: RelationType;
   displayField: string;
 };
+
+export type AdminTableActionKey =
+  | "canList"
+  | "canCreate"
+  | "canEdit"
+  | "canDelete";
+
+export type AdminFieldFlagKey =
+  | "required"
+  | "editable"
+  | "sortable"
+  | "filterable"
+  | "showInList"
+  | "showInForm";
 
 export type AdminFieldMeta = {
   id: string;
@@ -57,6 +85,7 @@ export type AdminFieldMeta = {
   placeholder?: string | null;
   helpText?: string | null;
   relation?: FieldRelationMeta | null;
+  sortOrder?: number;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -67,13 +96,14 @@ export type AdminTableMeta = {
   dbName: string;
   label: string;
   description?: string | null;
+  icon?: string | null;
   status: AdminTableStatus;
-  source: "pydantic" | "manual";
+  source: AdminTableSource;
   canList: boolean;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
-  icon?: string | null;
+  sortOrder?: number;
   fieldsCount?: number;
   relationsCount?: number;
   requiredFieldsCount?: number;
@@ -81,3 +111,61 @@ export type AdminTableMeta = {
   createdAt?: string;
   updatedAt?: string;
 };
+
+export type CreateAdminTableInput = Pick<
+  AdminTableMeta,
+  "name" | "dbName" | "label"
+> &
+  Partial<
+    Pick<AdminTableMeta, "description" | "status" | "source" | "icon">
+  >;
+
+export type UpdateAdminTableInput = Partial<
+  Pick<
+    AdminTableMeta,
+    | "name"
+    | "dbName"
+    | "label"
+    | "description"
+    | "status"
+    | "icon"
+    | "canList"
+    | "canCreate"
+    | "canEdit"
+    | "canDelete"
+  >
+>;
+
+export type CreateAdminFieldInput = Pick<
+  AdminFieldMeta,
+  "tableId" | "name" | "label" | "dbType" | "inputType"
+> &
+  Partial<
+    Pick<
+      AdminFieldMeta,
+      | "required"
+      | "editable"
+      | "sortable"
+      | "filterable"
+      | "showInList"
+      | "showInForm"
+    >
+  >;
+
+export type UpdateAdminFieldInput = Partial<
+  Pick<
+    AdminFieldMeta,
+    | "label"
+    | "dbType"
+    | "inputType"
+    | "required"
+    | "editable"
+    | "sortable"
+    | "filterable"
+    | "showInList"
+    | "showInForm"
+    | "placeholder"
+    | "helpText"
+    | "relation"
+  >
+>;
