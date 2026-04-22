@@ -85,8 +85,8 @@ Pydantic импортирует только базовые свойства:
 
 ```bash
 npm run dev          # admin + api
-npm run dev:admin    # только frontend
-npm run dev:api      # только backend
+npm run dev:admin-frontend    # только frontend
+npm run dev:admin-backend      # только backend
 
 npm run db:push      # применить схему без генерации миграций
 npm run db:generate  # сгенерировать миграции
@@ -173,6 +173,28 @@ apps/api/src/lib/async-handler.ts
 ```
 
 
+
+## Frontend UI
+
+Frontend переведён на связку:
+
+- `@refinedev/core`
+- `@refinedev/react-router`
+- `@refinedev/react-table`
+- `shadcn/ui`
+- Refine shadcn registry-style components: `ListView`, `EditView`, `DataTable`
+
+Компоненты UI лежат в `apps/admin/src/components/ui`, как это делает shadcn/ui registry.
+Refine-обёртки лежат в `apps/admin/src/components/refine-ui`.
+
+Для добавления новых компонентов можно использовать:
+
+```bash
+yarn dlx shadcn@latest add button card input select table tabs switch checkbox dropdown-menu textarea separator sonner
+yarn dlx shadcn@latest add https://ui.refine.dev/r/views.json
+```
+
+
 ## Что можно добавить дальше
 
 - импорт реальной Pydantic JSON Schema
@@ -182,3 +204,15 @@ apps/api/src/lib/async-handler.ts
 - enum options editor
 - preview формы/таблицы
 - авторизация
+
+## Refine Devtools
+
+Devtools по умолчанию выключены, чтобы не было ошибки WebSocket `ws://localhost:5001`.
+
+Чтобы включить Devtools, создай `apps/admin/.env`:
+
+```env
+VITE_REFINE_DEVTOOLS=true
+```
+
+И запусти Devtools-сервер Refine отдельно, если он нужен.

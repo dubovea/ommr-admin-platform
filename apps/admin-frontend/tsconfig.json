@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@ommr/shared": ["../../packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "../../packages/shared/src"]
+}

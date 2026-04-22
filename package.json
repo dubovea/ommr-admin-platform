@@ -7,18 +7,18 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,admin -c blue,green \"yarn dev:api\" \"yarn dev:admin\"",
-    "dev:admin": "yarn workspace @ommr/admin dev",
-    "dev:api": "yarn workspace @ommr/api dev",
-    "build": "yarn workspace @ommr/shared typecheck && yarn workspace @ommr/api build && yarn workspace @ommr/admin build",
-    "build:admin": "yarn workspace @ommr/admin build",
-    "build:api": "yarn workspace @ommr/api build",
-    "typecheck": "yarn workspace @ommr/shared typecheck && yarn workspace @ommr/api typecheck && yarn workspace @ommr/admin typecheck",
-    "db:generate": "yarn workspace @ommr/api db:generate",
-    "db:migrate": "yarn workspace @ommr/api db:migrate",
-    "db:push": "yarn workspace @ommr/api db:push",
-    "db:studio": "yarn workspace @ommr/api db:studio",
-    "seed": "yarn workspace @ommr/api seed"
+    "dev": "concurrently -n api,admin -c blue,green \"yarn dev:admin-backend\" \"yarn dev:admin-frontend\"",
+    "dev:admin-frontend": "yarn workspace @ommr/admin-frontend dev",
+    "dev:admin-backend": "yarn workspace @ommr/admin-backend dev",
+    "build": "yarn workspace @ommr/shared typecheck && yarn workspace @ommr/admin-backend build && yarn workspace @ommr/admin build",
+    "build:admin-frontend": "yarn workspace @ommr/admin build",
+    "build:admin-backend": "yarn workspace @ommr/admin-backend build",
+    "typecheck": "yarn workspace @ommr/shared typecheck && yarn workspace @ommr/admin-backend typecheck && yarn workspace @ommr/admin typecheck",
+    "db:generate": "yarn workspace @ommr/admin-backend db:generate",
+    "db:migrate": "yarn workspace @ommr/admin-backend db:migrate",
+    "db:push": "yarn workspace @ommr/admin-backend db:push",
+    "db:studio": "yarn workspace @ommr/admin-backend db:studio",
+    "seed": "yarn workspace @ommr/admin-backend seed"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
