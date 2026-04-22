@@ -6,22 +6,33 @@ import type {
 } from "@refinedev/core";
 
 const API_URL = "/api/admin";
+
 type ApiListResponse<T> = { data: T[]; total?: number };
 type ApiOneResponse<T> = { data: T };
 
 function appendFilters(searchParams: URLSearchParams, filters?: CrudFilter[]) {
   filters?.forEach((filter) => {
-    if ("field" in filter && filter.operator === "eq")
+    if ("field" in filter && filter.operator === "eq") {
       searchParams.set(filter.field, String(filter.value));
+    }
   });
 }
+
 function appendSorters(searchParams: URLSearchParams, sorters?: CrudSorting) {
-  sorters?.forEach((sorter) =>
-    searchParams.append("sort", `${sorter.field}:${sorter.order}`),
-  );
+  sorters?.forEach((sorter) => {
+    searchParams.append("sort", `${sorter.field}:${sorter.order}`);
+  });
 }
+
+function appendIds(searchParams: URLSearchParams, ids: Array<string | number>) {
+  ids.forEach((id) => {
+    searchParams.append("ids", String(id));
+  });
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const isFormData = init?.body instanceof FormData;
+
   const response = await fetch(url, {
     ...init,
     headers: {
@@ -29,39 +40,68 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
+
   if (!response.ok) {
+    let message = response.statusText;
+
+    try {
+      const errorBody = await response.json();
+
+      message =
+        errorBody?.message ||
+        errorBody?.error ||
+        errorBody?.data?.message ||
+        response.statusText;
+    } catch {
+      const text = await response.text();
+      message = text || response.statusText;
+    }
+
     const error: HttpError = {
-      message: (await response.text()) || response.statusText,
+      message,
       statusCode: response.status,
     };
+
     throw error;
   }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json() as Promise<T>;
 }
 
 export const dataProvider: DataProvider = {
   getList: async ({ resource, pagination, filters, sorters }) => {
     const searchParams = new URLSearchParams();
+
     if (pagination?.mode !== "off") {
       searchParams.set("page", String(pagination?.current ?? 1));
       searchParams.set("pageSize", String(pagination?.pageSize ?? 10));
     }
+
     appendFilters(searchParams, filters);
     appendSorters(searchParams, sorters);
+
     const qs = searchParams.toString();
+
     const response = await request<ApiListResponse<unknown>>(
       `${API_URL}/${resource}${qs ? `?${qs}` : ""}`,
     );
+
     return {
       data: response.data,
       total: response.total ?? response.data.length,
     };
   },
+
   getOne: async ({ resource, id }) => ({
     data: (
       await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}/${id}`)
     ).data,
   }),
+
   create: async ({ resource, variables }) => ({
     data: (
       await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}`, {
@@ -70,6 +110,7 @@ export const dataProvider: DataProvider = {
       })
     ).data,
   }),
+
   update: async ({ resource, id, variables }) => ({
     data: (
       await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}/${id}`, {
@@ -78,6 +119,7 @@ export const dataProvider: DataProvider = {
       })
     ).data,
   }),
+
   deleteOne: async ({ resource, id }) => ({
     data: (
       await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}/${id}`, {
@@ -85,15 +127,41 @@ export const dataProvider: DataProvider = {
       })
     ).data,
   }),
+
+  deleteMany: async ({ resource, ids }) => {
+    const searchParams = new URLSearchParams();
+
+    appendIds(searchParams, ids.map(String));
+    const response = await request<ApiListResponse<unknown>>(
+      `${API_URL}/${resource}?${searchParams.toString()}`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    return {
+      data: response.data,
+    };
+  },
+
   custom: async ({ url, method, payload, query, headers }) => {
     const searchParams = new URLSearchParams();
-    if (query)
-      Object.entries(query).forEach(
-        ([key, value]) => value != null && searchParams.set(key, String(value)),
-      );
-    const fullUrl = `${url}${searchParams.size ? `?${searchParams.toString()}` : ""}`;
+
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value != null) {
+          searchParams.set(key, String(value));
+        }
+      });
+    }
+
+    const fullUrl = `${url}${
+      searchParams.size ? `?${searchParams.toString()}` : ""
+    }`;
+
     const httpMethod = method?.toUpperCase() ?? "GET";
     const shouldHaveBody = !["GET", "DELETE"].includes(httpMethod);
+
     const response = await request<ApiOneResponse<unknown> | unknown>(fullUrl, {
       method: httpMethod,
       headers,
@@ -103,9 +171,17 @@ export const dataProvider: DataProvider = {
           : JSON.stringify(payload ?? {})
         : undefined,
     });
-    if (typeof response === "object" && response && "data" in response)
-      return { data: (response as ApiOneResponse<unknown>).data };
-    return { data: response };
+
+    if (typeof response === "object" && response && "data" in response) {
+      return {
+        data: (response as ApiOneResponse<unknown>).data,
+      };
+    }
+
+    return {
+      data: response,
+    };
   },
+
   getApiUrl: () => API_URL,
 };

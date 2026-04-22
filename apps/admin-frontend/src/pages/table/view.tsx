@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigation } from "@refinedev/core";
+import { useEffect, useMemo, useState } from "react";
+import { useDeleteMany, useNavigation } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
-import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
-import { Eye, MoreHorizontal, Pencil, Search } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Edit, Eye, MoreHorizontal, Pencil, Search } from "lucide-react";
+import { toast } from "sonner";
 import type { AdminTableMeta } from "@ommr/shared";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,60 +26,62 @@ import {
 
 import { StatusBadge } from "@/components/StatusBadge";
 import { TableIcon } from "@/components/TableIcon";
+import { useTableSelection } from "@/hooks/use-table-selection";
+import {
+  getSelectionCheckboxState,
+  SELECTION_COLUMN_SIZE,
+  TableSelectionCheckBox,
+} from "@/components/TableSelectionCheckBox";
+import { DeleteItemsToolbar } from "@/components/DeleteItemsToolbar";
+import { pluralizeRu } from "@/lib/ru-plural";
+import { DeleteItemsDialog } from "@/components/DeleteItemsDialog";
 
 export function TableListPage() {
   const { edit } = useNavigation();
-
-  /**
-   * Только состояние чекбоксов.
-   * Не используем его для правого preview.
-   */
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
-  /**
-   * Отдельное состояние выбранной таблицы для правой карточки.
-   * Меняется только по клику на иконку таблицы.
-   */
   const [previewTableId, setPreviewTableId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const defaultSelectionAppliedRef = useRef(false);
+  const {
+    rowSelection,
+    setRowSelection,
+    selectedIds: selectedTableIds,
+    selectedCount,
+    hasSelectedRows,
+    clearSelection,
+  } = useTableSelection();
+
+  const { mutate: deleteMany, isLoading: isDeleting } =
+    useDeleteMany<AdminTableMeta>();
 
   const columns = useMemo<ColumnDef<AdminTableMeta>[]>(
     () => [
       {
         id: "select",
-        size: 40,
-        minSize: 40,
-        maxSize: 40,
+        size: SELECTION_COLUMN_SIZE,
+        minSize: SELECTION_COLUMN_SIZE,
+        maxSize: SELECTION_COLUMN_SIZE,
         enableSorting: false,
         enableHiding: false,
         header: ({ table }) => (
-          <div className="mx-2.75 flex w-10 items-center justify-center">
-            <Checkbox
-              checked={
-                table.getIsAllPageRowsSelected() ||
-                (table.getIsSomePageRowsSelected() && "indeterminate")
-              }
-              onCheckedChange={(value) => {
-                table.toggleAllPageRowsSelected(!!value);
-              }}
-              aria-label="Выбрать все строки"
-              className="size-4 cursor-pointer"
-            />
-          </div>
+          <TableSelectionCheckBox
+            checked={getSelectionCheckboxState(
+              table.getIsAllPageRowsSelected(),
+              table.getIsSomePageRowsSelected(),
+            )}
+            onCheckedChange={(value) => {
+              table.toggleAllPageRowsSelected(value === true);
+            }}
+            ariaLabel="Выбрать все строки"
+          />
         ),
         cell: ({ row }) => (
-          <div
-            className="flex w-10 items-center justify-center"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Checkbox
+          <div onClick={(event) => event.stopPropagation()}>
+            <TableSelectionCheckBox
               checked={row.getIsSelected()}
               onCheckedChange={(value) => {
-                row.toggleSelected(!!value);
+                row.toggleSelected(value === true);
               }}
-              aria-label="Выбрать строку"
-              className="size-4 cursor-pointer"
+              ariaLabel="Выбрать строку"
             />
           </div>
         ),
@@ -87,6 +89,7 @@ export function TableListPage() {
       {
         id: "name",
         accessorKey: "name",
+        minSize: 200,
         header: ({ column }) => (
           <div className="flex items-center gap-1">
             <span>Таблица</span>
@@ -102,17 +105,25 @@ export function TableListPage() {
                 type="button"
                 variant={isPreviewActive ? "secondary" : "ghost"}
                 size="icon"
-                className="size-9 shrink-0"
+                className="size-9 shrink-0 cursor-pointer"
                 onClick={(event) => {
                   event.stopPropagation();
                   setPreviewTableId(row.original.id);
                 }}
-                aria-label={`Показать таблицу ${row.original.name}`}
+                aria-label={`Показать таблицу ${row.original.label || row.original.name}`}
               >
                 <TableIcon icon={row.original.icon} />
               </Button>
 
-              <strong>{row.original.name}</strong>
+              <div className="min-w-0">
+                <strong className="block truncate">
+                  {row.original.label || row.original.name}
+                </strong>
+                
+                <span className="block truncate text-xs text-muted-foreground">
+                  {row.original.name}
+                </span>
+              </div>
             </div>
           );
         },
@@ -142,16 +153,6 @@ export function TableListPage() {
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
-        id: "fieldsCount",
-        accessorKey: "fieldsCount",
-        header: "Поля",
-      },
-      {
-        id: "relationsCount",
-        accessorKey: "relationsCount",
-        header: "Связи",
-      },
-      {
         id: "updatedAt",
         accessorKey: "updatedAt",
         header: "Обновлено",
@@ -164,7 +165,7 @@ export function TableListPage() {
         enableHiding: false,
         cell: ({ row }) => (
           <div
-            className="flex items-center gap-2"
+            className="flex justify-center"
             onClick={(event) => event.stopPropagation()}
           >
             <Button
@@ -172,24 +173,8 @@ export function TableListPage() {
               size="icon"
               onClick={() => edit("tables", row.original.id)}
             >
-              <Eye className="size-4" />
+              <Edit className="size-4" />
             </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => edit("tables", row.original.id)}
-                >
-                  Редактировать
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         ),
       },
@@ -216,33 +201,59 @@ export function TableListPage() {
   const reactTable = table.reactTable;
   const rows = reactTable.getRowModel().rows;
 
-  useEffect(() => {
-    if (rows.length === 0) return;
-    const defaultRow = rows?.[0];
-
-    if (!previewTableId) {
-      setPreviewTableId(defaultRow.id);
-    }
-
-    if (!defaultSelectionAppliedRef.current) {
-      defaultSelectionAppliedRef.current = true;
-
-      setRowSelection((current) => {
-        if (Object.keys(current).length > 0) {
-          return current;
-        }
-
-        return {
-          [defaultRow.id]: true,
-        };
-      });
-    }
-  }, [rows.length, previewTableId]);
+  const selectedTables = useMemo(
+    () => rows.filter((row) => selectedTableIds.includes(row.id)),
+    [rows, selectedTableIds],
+  );
 
   const selectedTable =
     rows.find((row) => row.id === previewTableId)?.original ??
     rows[0]?.original ??
     null;
+
+  useEffect(() => {
+    if (rows.length === 0) {
+      setPreviewTableId(null);
+      return;
+    }
+
+    if (previewTableId && rows.some((row) => row.id === previewTableId)) {
+      return;
+    }
+
+    setPreviewTableId(rows[0].id);
+  }, [rows, previewTableId]);
+
+  function handleDeleteSelected() {
+    if (!hasSelectedRows) return;
+
+    deleteMany(
+      {
+        resource: "tables",
+        ids: selectedTableIds,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            selectedCount === 1
+              ? "Таблица удалена"
+              : `Таблицы удалены: ${selectedCount}`,
+          );
+
+          clearSelection();
+          setIsDeleteDialogOpen(false);
+
+          if (previewTableId && selectedTableIds.includes(previewTableId)) {
+            const nextPreviewRow = rows.find(
+              (row) => !selectedTableIds.includes(row.id),
+            );
+
+            setPreviewTableId(nextPreviewRow?.id ?? null);
+          }
+        },
+      },
+    );
+  }
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_420px] gap-6">
@@ -268,9 +279,20 @@ export function TableListPage() {
           </CardContent>
         </Card>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Поиск по названию таблицы..." />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Поиск по названию таблицы..."
+            />
+          </div>
+
+          <DeleteItemsToolbar
+            selectedCount={selectedCount}
+            deleteDisabled={!hasSelectedRows || isDeleting}
+            onDeleteClick={() => setIsDeleteDialogOpen(true)}
+          />
         </div>
 
         <DataTable table={table as any} />
@@ -289,8 +311,12 @@ export function TableListPage() {
 
                 <div>
                   <h2 className="text-2xl font-semibold">
-                    {selectedTable.name}
+                    {selectedTable.label || selectedTable.name}
                   </h2>
+
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {selectedTable.name}
+                  </div>
 
                   <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="grid size-5 place-items-center rounded bg-emerald-100 text-xs font-bold text-emerald-700">
@@ -361,6 +387,27 @@ export function TableListPage() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteItemsDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Удалить выбранные таблицы?"
+        description={
+          <>
+            Вы собираетесь удалить{" "}
+            <span className="font-medium text-foreground">{selectedCount}</span>{" "}
+            {pluralizeRu(selectedCount, ["таблицу", "таблицы", "таблиц"])}. Это
+            действие нельзя будет отменить.
+          </>
+        }
+        items={selectedTables.map((row) => ({
+          id: row.id,
+          title: row.original.label || row.original.name,
+          description: row.original.name,
+        }))}
+        isPending={isDeleting}
+        onConfirm={handleDeleteSelected}
+      />
     </div>
   );
 }

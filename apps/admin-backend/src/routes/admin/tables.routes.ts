@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
 import { createTableSchema, updateTableSchema } from "../../validation.js";
+import { parseIdsQuery } from "../../lib/utils.js";
 
 export const tablesRouter = Router();
 
@@ -104,5 +105,57 @@ tablesRouter.patch(
     }
 
     res.json({ data: updated });
+  }),
+);
+
+tablesRouter.delete(
+  "/",
+  asyncHandler(async (req, res) => {
+    const ids = parseIdsQuery(req.query.ids);
+
+    if (ids.length === 0) {
+      res.status(400).json({
+        message: "Передайте ids через query: ?ids=id1&ids=id2",
+      });
+      return;
+    }
+
+    const deletedTables = await db.transaction(async (tx) => {
+      await tx.delete(adminFields).where(inArray(adminFields.tableId, ids));
+
+      return tx
+        .delete(adminTables)
+        .where(inArray(adminTables.id, ids))
+        .returning();
+    });
+
+    res.json({
+      data: deletedTables,
+      total: deletedTables.length,
+    });
+  }),
+);
+
+tablesRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const [deletedTable] = await db.transaction(async (tx) => {
+      await tx.delete(adminFields).where(eq(adminFields.tableId, id));
+
+      return tx.delete(adminTables).where(eq(adminTables.id, id)).returning();
+    });
+
+    if (!deletedTable) {
+      res.status(404).json({
+        message: "Таблица не найдена",
+      });
+      return;
+    }
+
+    res.json({
+      data: deletedTable,
+    });
   }),
 );
