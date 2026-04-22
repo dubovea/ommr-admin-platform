@@ -43,7 +43,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { getTanStackTable } from "@/lib/refine-table";
 
 export function TableEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -203,7 +202,7 @@ export function TableEditPage() {
       pagination: { mode: "off" },
     },
   });
-  const reactFieldsTable = getTanStackTable<AdminFieldMeta>(fieldsTable as any);
+  const reactFieldsTable = fieldsTable.reactTable;
   const fieldRows = reactFieldsTable.getRowModel().rows;
   useEffect(() => {
     if (fieldRows.length === 0 || Object.keys(fieldRowSelection).length > 0)
