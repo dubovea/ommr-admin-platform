@@ -96,7 +96,7 @@ export function TableListPage() {
       {
         id: "name",
         accessorKey: "name",
-        minSize: 240,
+        minSize: 400,
         meta: {
           filterOperator: "contains",
         },
@@ -143,26 +143,6 @@ export function TableListPage() {
             </div>
           );
         },
-      },
-      {
-        id: "label",
-        accessorKey: "label",
-        minSize: 220,
-        meta: {
-          filterOperator: "contains",
-        },
-        header: ({ column, table }) => (
-          <div className="flex items-center gap-1">
-            <span>Название</span>
-            <DataTableSorter column={column} />
-            <DataTableFilterDropdownText
-              column={column}
-              table={table}
-              defaultOperator="contains"
-              placeholder="Поиск по label"
-            />
-          </div>
-        ),
       },
       {
         id: "source",
