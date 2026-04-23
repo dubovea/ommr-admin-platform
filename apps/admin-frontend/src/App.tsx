@@ -14,6 +14,7 @@ import { useNotificationProvider } from "./components/refine-ui/notification/use
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import { TableCreatePage, TableEditPage, TableListPage } from "./pages/table";
 import { dataProvider } from "./providers/data";
+import { GraphNodesDB } from "./pages/schemas";
 
 const enableDevtools = import.meta.env.VITE_REFINE_DEVTOOLS === "true";
 
@@ -33,8 +34,13 @@ function RefineApp() {
           meta: { canDelete: true, label: "Таблицы" },
         },
         { name: "fields", meta: { label: "Поля" } },
+        { name: "schemas", meta: { label: "Схема БД" } },
       ]}
-      options={{ syncWithLocation: true, warnWhenUnsavedChanges: true }}
+      options={{
+        syncWithLocation: true,
+        warnWhenUnsavedChanges: true,
+        disableTelemetry: true,
+      }}
     >
       <Routes>
         <Route
@@ -50,6 +56,9 @@ function RefineApp() {
             <Route path="list" element={<TableListPage />} />
             <Route path="create" element={<TableCreatePage />} />
             <Route path="edit/:id" element={<TableEditPage />} />
+          </Route>
+          <Route path="/schemas">
+            <Route index element={<GraphNodesDB />} />
           </Route>
           <Route path="*" element={<ErrorComponent />} />
         </Route>

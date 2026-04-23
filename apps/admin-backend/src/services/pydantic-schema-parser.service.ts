@@ -6,6 +6,12 @@ import {
   type FieldRelationMeta,
 } from "@ommr/shared";
 
+type JsonSchemaRelation = {
+  to_table?: string;
+  link_key?: string;
+  display_field?: string;
+};
+
 type JsonSchema = {
   title?: string;
   description?: string;
@@ -22,28 +28,37 @@ type JsonSchema = {
   $defs?: Record<string, JsonSchema>;
   definitions?: Record<string, JsonSchema>;
   components?: { schemas?: Record<string, JsonSchema> };
+  "x-relation"?: JsonSchemaRelation;
 };
 
 export type ParsedPydanticField = Omit<CreateAdminFieldInput, "tableId">;
 
 export type ParsedPydanticTable = {
   name: string;
+  dbName: string;
   label: string;
   description: string | null;
   fields: ParsedPydanticField[];
 };
 
 export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
-  const schema = input as JsonSchema;
+  const raw = input as Record<string, unknown>;
+  const schema = (
+    raw?.schema && typeof raw.schema === "object" ? raw.schema : input
+  ) as JsonSchema;
+
   const schemas = extractSchemas(schema);
 
   return Object.entries(schemas).map(([fallbackName, modelSchema]) => {
-    const tableName = toSnakeCase(modelSchema.title || fallbackName);
+    const tableName = toSnakeCase(fallbackName);
     const required = new Set(modelSchema.required ?? []);
 
     return {
       name: tableName,
-      label: modelSchema.title || toTitle(tableName),
+      dbName: tableName,
+      label: modelSchema.description
+        ? modelSchema.description.split?.(".")?.[0]
+        : modelSchema.title || toTitle(fallbackName),
       description: modelSchema.description ?? null,
       fields: Object.entries(modelSchema.properties ?? {}).map(
         ([fieldName, fieldSchema], index) => {
@@ -54,12 +69,8 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
           return {
             name: fieldName,
             label: toTitle(fieldName),
-            dbType: getDbType(resolved),
-            inputType: relation
-              ? resolved.type === "array"
-                ? "multiselect"
-                : "select"
-              : getInputType(resolved),
+            dbType: getDbType(resolved, relation),
+            inputType: relation ? "multiselect" : getInputType(resolved),
             required: required.has(fieldName),
             editable: fieldName !== "id" && !fieldName.endsWith("_at"),
             sortable: true,
@@ -72,6 +83,7 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
             placeholder: null,
             helpText: resolved.description ?? null,
             relation,
+            sortOrder: index + 1,
           } satisfies ParsedPydanticField;
         },
       ),
@@ -80,12 +92,41 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
 }
 
 function extractSchemas(schema: JsonSchema): Record<string, JsonSchema> {
-  if (schema.components?.schemas) return schema.components.schemas;
-  if (schema.$defs) return schema.$defs;
-  if (schema.definitions) return schema.definitions;
+  const defs =
+    schema.components?.schemas ?? schema.$defs ?? schema.definitions ?? null;
+
+  if (defs && schema.type === "object" && schema.properties) {
+    const referencedEntries = Object.entries(schema.properties)
+      .map(([propertyName, propertySchema]) => {
+        const ref = propertySchema.$ref ?? propertySchema.items?.$ref;
+
+        if (!ref) return null;
+
+        const targetName = ref.split("/").pop();
+        if (!targetName) return null;
+
+        const targetSchema = defs[targetName];
+        if (!targetSchema) return null;
+
+        return [propertyName, targetSchema] as const;
+      })
+      .filter(
+        (entry): entry is readonly [string, JsonSchema] => entry !== null,
+      );
+
+    if (referencedEntries.length > 0) {
+      return Object.fromEntries(referencedEntries);
+    }
+  }
+
+  if (defs) {
+    return defs;
+  }
+
   if (schema.type === "object" && schema.properties) {
     return { [schema.title || "ImportedModel"]: schema };
   }
+
   throw new Error("Unsupported Pydantic schema format");
 }
 
@@ -95,17 +136,30 @@ function resolveNullable(schema: JsonSchema): JsonSchema {
 }
 
 function getRelation(schema: JsonSchema): FieldRelationMeta | null {
-  if (!schema.$ref) return null;
+  const relation = schema["x-relation"];
 
-  const targetName = schema.$ref.split("/").pop();
-  if (!targetName) return null;
+  if (relation?.to_table && relation?.link_key && relation?.display_field) {
+    return {
+      targetTable: toSnakeCase(relation.to_table),
+      targetKey: relation.link_key,
+      displayField: relation.display_field,
+      additionalText: null,
+    };
+  }
 
-  return {
-    targetTable: toSnakeCase(targetName),
-    targetKey: "id",
-    displayField: "name",
-    additionalText: null,
-  };
+  if (schema.$ref) {
+    const targetName = schema.$ref.split("/").pop();
+    if (!targetName) return null;
+
+    return {
+      targetTable: toSnakeCase(targetName),
+      targetKey: "id",
+      displayField: "name",
+      additionalText: null,
+    };
+  }
+
+  return null;
 }
 
 function getOptions(schema: JsonSchema): FieldOption[] | null {
@@ -141,8 +195,11 @@ function getInputType(schema: JsonSchema): FieldInputType {
   return "text";
 }
 
-function getDbType(schema: JsonSchema): string {
-  if (schema.$ref) return "relation";
+function getDbType(
+  schema: JsonSchema,
+  relation: FieldRelationMeta | null,
+): string {
+  if (relation) return "relation";
   if (schema.enum) return "enum";
   if (schema.type === "array") return "array";
   if (schema.format === "date-time") return "datetime";
@@ -164,5 +221,5 @@ function toSnakeCase(value: string) {
 function toTitle(value: string) {
   return value
     .replace(/_/g, " ")
-    .replace(/\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

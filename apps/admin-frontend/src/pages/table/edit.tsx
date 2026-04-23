@@ -188,38 +188,29 @@ export function TableEditPage() {
         },
       },
       {
-        id: "group",
-        accessorKey: "group",
-        header: "Группа",
-        cell: ({ row }) => row.original.group || "—",
-      },
-      {
         id: "inputType",
         accessorKey: "inputType",
         header: "Тип поля",
+        minSize: 255,
         cell: ({ row }) => FIELD_INPUT_TYPE_LABELS[row.original.inputType],
       },
       {
         id: "required",
         accessorKey: "required",
         header: "Обязательное",
-        cell: ({ row }) => (
-          <Checkbox checked={row.original.required} disabled />
-        ),
+        cell: ({ row }) => <Checkbox checked={row.original.required} />,
       },
       {
         id: "editable",
         accessorKey: "editable",
         header: "Редактируемое",
-        cell: ({ row }) => (
-          <Checkbox checked={row.original.editable} disabled />
-        ),
+        cell: ({ row }) => <Checkbox checked={row.original.editable} />,
       },
       {
         id: "visible",
         accessorKey: "visible",
         header: "Видимое",
-        cell: ({ row }) => <Checkbox checked={row.original.visible} disabled />,
+        cell: ({ row }) => <Checkbox checked={row.original.visible} />,
       },
       {
         id: "actions",
@@ -624,7 +615,9 @@ function FieldInspector({
         <>
           <Separator />
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Настройки связи с другой таблицей</h3>
+            <h3 className="text-sm font-semibold">
+              Настройки связи с другой таблицей
+            </h3>
             <LabeledInput
               label="Имя таблицы (target_table)"
               value={field.relation?.targetTable ?? ""}

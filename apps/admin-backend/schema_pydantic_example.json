@@ -33,7 +33,12 @@
         "load_rack_code": {
           "default": "",
           "title": "Load Rack Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "load_racks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "variant_code": {
           "default": "",
@@ -48,7 +53,12 @@
         "track": {
           "default": "",
           "title": "Track",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "riser_count": {
           "default": 0,
@@ -70,7 +80,12 @@
             "type": "string"
           },
           "title": "Cargoes",
-          "type": "array"
+          "type": "array",
+          "x-relation": {
+            "to_table": "cargoes",
+            "link_key": "code",
+            "display_field": "name"
+          }
         }
       },
       "title": "LoadRackVariantsData",
@@ -99,12 +114,22 @@
         "load_rack_code": {
           "default": "",
           "title": "Load Rack Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "load_racks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "variant_code": {
           "default": "",
           "title": "Variant Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "load_rack_variants",
+            "link_key": "variant_code",
+            "display_field": "variant_name"
+          }
         },
         "time": {
           "default": 0,
@@ -138,12 +163,22 @@
         "code": {
           "default": "",
           "title": "Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "locos",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "track": {
           "default": "",
           "title": "Track",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         }
       },
       "title": "LocosInits",
@@ -160,22 +195,42 @@
         "code": {
           "default": "",
           "title": "Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "locos",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "track": {
           "default": "",
           "title": "Track",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "type_code": {
           "default": "",
           "title": "Type Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "wagon_types",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "cargo": {
           "default": "",
           "title": "Cargo",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "cargoes",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "quantity": {
           "default": 0,
@@ -192,14 +247,24 @@
         "code": {
           "default": "",
           "title": "Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "locos",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "maneuvours": {
           "items": {
             "type": "string"
           },
           "title": "Maneuvours",
-          "type": "array"
+          "type": "array",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         }
       },
       "title": "LocosManevours",
@@ -211,12 +276,22 @@
         "code": {
           "default": "",
           "title": "Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "locos",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "track": {
           "default": "",
           "title": "Track",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "from_time": {
           "default": "",
@@ -280,7 +355,12 @@
         "track": {
           "default": "",
           "title": "Track",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         }
       },
       "title": "ResourceUnavailable",
@@ -297,7 +377,12 @@
         "cargo_code": {
           "default": "",
           "title": "Cargo Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "cargoes",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "type_code": {
           "default": "",
@@ -370,12 +455,22 @@
       "properties": {
         "from": {
           "title": "From",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "to": {
           "default": "",
           "title": "To",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "switch": {
           "default": "",
@@ -427,7 +522,12 @@
             "type": "string"
           },
           "title": "Cargoes",
-          "type": "array"
+          "type": "array",
+          "x-relation": {
+            "to_table": "cargoes",
+            "link_key": "code",
+            "display_field": "name"
+          }
         }
       },
       "title": "WagonTypes",
@@ -444,17 +544,32 @@
         "type_code": {
           "default": "",
           "title": "Type Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "wagon_types",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "cargo_code": {
           "default": "",
           "title": "Cargo Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "cargoes",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "track": {
           "default": "",
           "title": "Track",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "quantity": {
           "default": 0,
@@ -471,17 +586,32 @@
         "type_code": {
           "default": "",
           "title": "Type Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "wagon_types",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "cargo_code": {
           "default": "",
           "title": "Cargo Code",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "cargoes",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "track": {
           "default": "",
           "title": "Track",
-          "type": "string"
+          "type": "string",
+          "x-relation": {
+            "to_table": "tracks",
+            "link_key": "code",
+            "display_field": "name"
+          }
         },
         "quantity": {
           "default": 0,
