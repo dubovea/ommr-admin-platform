@@ -77,7 +77,7 @@ export const dataProvider: DataProvider = {
     const searchParams = new URLSearchParams();
 
     if (pagination?.mode !== "off") {
-      searchParams.set("page", String(pagination?.current ?? 1));
+      searchParams.set("page", String(pagination?.currentPage ?? 1));
       searchParams.set("pageSize", String(pagination?.pageSize ?? 10));
     }
 

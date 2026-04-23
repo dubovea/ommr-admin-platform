@@ -310,12 +310,6 @@ export function TableListPage() {
       },
       {
         onSuccess: () => {
-          toast.success(
-            selectedCount === 1
-              ? "Таблица удалена"
-              : `Таблицы удалены: ${selectedCount}`,
-          );
-
           clearSelection();
           setIsDeleteDialogOpen(false);
 

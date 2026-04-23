@@ -254,7 +254,7 @@ export function TableCreatePage() {
             tableId: createdTable.id,
             name: field.name.trim(),
             label: field.label.trim(),
-            dbType: field.dbType? field.dbType.trim() : "",
+            dbType: field.dbType ? field.dbType.trim() : "",
             inputType: field.inputType,
             required: field.required,
             editable: field.editable,
@@ -276,13 +276,8 @@ export function TableCreatePage() {
       await invalidate({ resource: "tables", invalidates: ["list"] });
       await invalidate({ resource: "fields", invalidates: ["list"] });
 
-      toast.success("Таблица и поля успешно созданы");
       edit("tables", createdTable.id);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Не удалось создать таблицу",
-      );
-    }
+    } catch (error) {}
   }
 
   const isSaving = isCreatingTable || isCreatingField;

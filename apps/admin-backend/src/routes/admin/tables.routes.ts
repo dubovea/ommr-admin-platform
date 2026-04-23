@@ -82,7 +82,17 @@ tablesRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const payload = createTableSchema.parse(req.body);
+    const [table] = await db
+      .select()
+      .from(adminTables)
+      .where(eq(adminTables.name, payload.name));
 
+    if (table) {
+      res.status(409).json({
+        message: `Таблица с имененем ${table.name} уже существует.`,
+      });
+      return;
+    }
     const [created] = await db.insert(adminTables).values(payload).returning();
 
     res.status(201).json({ data: created });

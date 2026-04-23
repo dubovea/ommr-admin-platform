@@ -9,6 +9,7 @@ import {
   type HttpError,
   useDeleteMany,
   useInvalidate,
+  useList,
   useShow,
   useUpdate,
 } from "@refinedev/core";
@@ -69,14 +70,17 @@ import { LoadingBanner } from "@/components/LoadingBanner";
 export function TableEditPage() {
   const { id } = useParams<{ id: string }>();
   const invalidate = useInvalidate();
-
-  const { query } = useShow<any>({
+  const {
+    query: { data: editTableData, isLoading, isError },
+  } = useShow<any>({
     resource: "tables",
   });
 
-  const { data, isLoading, isError } = query;
-
-  const isSuccessLoaded = !isLoading && !isError && !!data?.data;
+  const { query: tablesListData } = useList({
+    resource: "tables",
+  });
+  const isSuccessLoaded = !isLoading && !isError && !!editTableData?.data;
+  const tablesData = tablesListData?.data?.data || [];
 
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -105,7 +109,6 @@ export function TableEditPage() {
       queryOptions: {
         enabled: Boolean(id),
       },
-      onMutationSuccess: () => toast.success("Таблица сохранена"),
     },
   });
 
@@ -319,11 +322,6 @@ export function TableEditPage() {
       { resource: "fields", ids: fieldIdsToDelete },
       {
         onSuccess: () => {
-          toast.success(
-            fieldIdsToDelete.length === 1
-              ? "Поле удалено"
-              : `Поля удалены: ${fieldIdsToDelete.length}`,
-          );
           removeSelectedFieldIds(fieldIdsToDelete);
           if (activeFieldId && fieldIdsToDelete.includes(activeFieldId)) {
             const nextActiveField = fieldRows.find(
@@ -461,6 +459,7 @@ export function TableEditPage() {
               <CardContent>
                 {selectedField ? (
                   <FieldInspector
+                    tablesData={tablesData}
                     key={selectedField.id}
                     field={selectedField}
                     onChange={patchSelectedField}
@@ -516,10 +515,12 @@ function FormLabel({ children }: { children: ReactNode }) {
 }
 
 function FieldInspector({
+  tablesData,
   field,
   onChange,
   onClose,
 }: {
+  tablesData: AdminTableMeta[];
   field: AdminFieldMeta;
   onChange: (payload: UpdateAdminFieldInput) => void;
   onClose: () => void;
@@ -618,34 +619,61 @@ function FieldInspector({
             <h3 className="text-sm font-semibold">
               Настройки связи с другой таблицей
             </h3>
-            <LabeledInput
-              label="Имя таблицы (target_table)"
-              value={field.relation?.targetTable ?? ""}
-              onChange={(value) =>
+            <FormLabel>Имя таблицы (target_table) *</FormLabel>
+            <Select
+              value={field?.relation?.targetTable}
+              onValueChange={(value: string) => {
                 onChange({
                   relation: {
                     targetTable: value,
-                    targetKey: field.relation?.targetKey ?? "id",
-                    displayField: field.relation?.displayField ?? "name",
-                    additionalText: field.relation?.additionalText ?? null,
+                    targetKey: "",
+                    displayField: "",
+                    additionalText: null,
                   },
-                })
-              }
-            />
-            <LabeledInput
-              label="Ключ (target_key)"
-              value={field.relation?.targetKey ?? ""}
-              onChange={(value) =>
+                });
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {tablesData.map((data) => (
+                  <SelectItem value={data.name} key={data.name}>
+                    {data.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormLabel>Ключ (target_key) *</FormLabel>
+            <Select
+              value={field?.relation?.targetTable}
+              onValueChange={(value: string) => {
                 onChange({
                   relation: {
-                    targetTable: field.relation?.targetTable ?? "",
-                    targetKey: value,
-                    displayField: field.relation?.displayField ?? "name",
-                    additionalText: field.relation?.additionalText ?? null,
+                    targetTable: value,
+                    targetKey: "",
+                    displayField: "",
+                    additionalText: null,
                   },
-                })
-              }
-            />
+                });
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {tablesData
+                  .find((d) => d.name === field?.relation?.targetTable)
+                  ?.fields?.map((data) => {
+                    debugger;
+                    return (
+                      <SelectItem value={data.name} key={data.name}>
+                        {data.name}
+                      </SelectItem>
+                    );
+                  })}
+              </SelectContent>
+            </Select>
             <LabeledInput
               label="Отображаемое поле (display_field)"
               value={field.relation?.displayField ?? ""}
