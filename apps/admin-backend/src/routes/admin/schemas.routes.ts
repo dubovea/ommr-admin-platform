@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
@@ -62,14 +61,14 @@ schemasRouter.post(
             sortable: field.sortable,
             filterable: field.filterable,
             visible: field.visible,
-            group: field.group,
-            defaultValue: field.defaultValue,
-            options: field.options,
-            validation: field.validation,
-            placeholder: null,
-            helpText: null,
-            relation: field.relation,
-            sortOrder: index + 1,
+            group: field.group ?? null,
+            defaultValue: field.defaultValue ?? null,
+            options: field.options ?? null,
+            validation: field.validation ?? null,
+            placeholder: field.placeholder ?? null,
+            helpText: field.helpText ?? null,
+            relation: field.relation ?? null,
+            sortOrder: field.sortOrder ?? index + 1,
           })),
         );
       }

@@ -1,4 +1,3 @@
-
 export const FIELD_INPUT_TYPES = [
   "text",
   "textarea",
@@ -184,6 +183,7 @@ export type CreateAdminFieldInput = Pick<
       | "placeholder"
       | "helpText"
       | "relation"
+      | "sortOrder"
     >
   >;
 
@@ -205,5 +205,6 @@ export type UpdateAdminFieldInput = Partial<
     | "placeholder"
     | "helpText"
     | "relation"
+    | "sortOrder"
   >
 >;

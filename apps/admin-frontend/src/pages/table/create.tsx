@@ -7,9 +7,16 @@ import { toast } from "sonner";
 import type {
   AdminFieldMeta,
   AdminTableMeta,
+  CreateAdminFieldInput,
+  CreateAdminTableInput,
+  FieldDefaultValue,
   FieldInputType,
+  FieldOption,
+  FieldRelationMeta,
+  FieldValidationMeta,
 } from "@ommr/shared";
 import {
+  DEFAULT_FIELD_VALIDATION,
   FIELD_INPUT_TYPE_LABELS,
   FIELD_INPUT_TYPES,
 } from "@ommr/shared";
@@ -28,122 +35,85 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  CreateView,
+  CreateViewHeader,
+} from "@/components/refine-ui/views/create-view";
 
-type TableCreateValues = {
-  name: string;
-  dbName: string;
-  label: string;
-  description: string;
-  status: AdminTableMeta["status"];
-  source: AdminTableMeta["source"];
-  icon: string;
+type TableCreateValues = CreateAdminTableInput & {
   canList: boolean;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  description: string;
+  icon: string;
+  status: AdminTableMeta["status"];
+  source: AdminTableMeta["source"];
 };
 
-type RelationDraft = {
-  targetTable: string;
-  targetKey: string;
-  displayField: string;
-  additionalText: string;
-};
-
-type FieldDraft = {
+type FieldDraft = Omit<CreateAdminFieldInput, "tableId"> & {
   tempId: string;
-  name: string;
-  label: string;
   group: string;
-  dbType: string;
-  inputType: FieldInputType;
-
-  required: boolean;
-  editable: boolean;
-  sortable: boolean;
-  filterable: boolean;
-  visible: boolean;
-
   placeholder: string;
   helpText: string;
-
+  relation: FieldRelationMeta | null;
   defaultValueText: string;
   optionsText: string;
   validationText: string;
-
-  relation: RelationDraft;
 };
 
-const DEFAULT_VALIDATION_JSON = `{
-  "min": null,
-  "max": null,
-  "minLength": null,
-  "maxLength": null,
-  "pattern": ""
-}`;
+const DEFAULT_OPTIONS_JSON = "[]";
+const DEFAULT_VALUE_JSON = "null";
 
-const DEFAULT_OPTIONS_JSON = `[]`;
-
-const DEFAULT_VALUE_JSON = `null`;
-
-function createEmptyFieldDraft(): FieldDraft {
+function createFieldDraft(): FieldDraft {
   return {
     tempId: crypto.randomUUID(),
     name: "",
     label: "",
-    group: "",
-    dbType: "String",
+    dbType: "str",
     inputType: "text",
-
     required: false,
     editable: true,
     sortable: false,
     filterable: false,
     visible: true,
-
+    group: "",
     placeholder: "",
     helpText: "",
-
+    relation: null,
     defaultValueText: DEFAULT_VALUE_JSON,
     optionsText: DEFAULT_OPTIONS_JSON,
-    validationText: DEFAULT_VALIDATION_JSON,
-
-    relation: {
-      targetTable: "",
-      targetKey: "",
-      displayField: "",
-      additionalText: "",
-    },
+    validationText: JSON.stringify(DEFAULT_FIELD_VALIDATION, null, 2),
+    sortOrder: 1,
   };
 }
 
-function parseJsonOrThrow(text: string, label: string) {
+function parseJsonOrThrow<T>(text: string, label: string): T {
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as T;
   } catch {
-    throw new Error(`Некорректный JSON в блоке "${label}"`);
+    throw new Error(`Некорректный JSON в поле "${label}"`);
   }
 }
 
-function hasRelation(relation: RelationDraft) {
+function hasRelation(relation: FieldRelationMeta | null | undefined) {
   return Boolean(
-    relation.targetTable.trim() ||
-      relation.targetKey.trim() ||
-      relation.displayField.trim() ||
-      relation.additionalText.trim(),
+    relation?.targetTable ||
+      relation?.targetKey ||
+      relation?.displayField ||
+      relation?.additionalText,
   );
 }
 
 export function TableCreatePage() {
-  const { edit } = useNavigation();
   const invalidate = useInvalidate();
+  const { edit } = useNavigation();
 
-  const [fields, setFields] = useState<FieldDraft[]>([createEmptyFieldDraft()]);
-  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [fields, setFields] = useState<FieldDraft[]>([createFieldDraft()]);
+  const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
 
   const {
     register,
-    control,
     watch,
     setValue,
     handleSubmit,
@@ -163,59 +133,62 @@ export function TableCreatePage() {
     },
   });
 
-  const { mutateAsync: createTable, mutation: createTableMutation } =
-    useCreate<AdminTableMeta>();
-  const { mutateAsync: createField, mutation: createFieldMutation } =
-    useCreate<AdminFieldMeta>();
+  const { mutate: createTable, isLoading: isCreatingTable } = useCreate<AdminTableMeta>();
+  const { mutate: createField, isLoading: isCreatingField } = useCreate<AdminFieldMeta>();
 
-  const isSaving =
-    createTableMutation.isPending || createFieldMutation.isPending;
-
-  const selectedField =
-    fields.find((field) => field.tempId === selectedFieldId) ?? fields[0] ?? null;
+  const activeField =
+    fields.find((field) => field.tempId === activeFieldId) ?? fields[0] ?? null;
 
   const groupedPreview = useMemo(() => {
     return fields.reduce<Record<string, FieldDraft[]>>((acc, field) => {
-      const key = field.group.trim() || "Без группы";
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(field);
+      const groupName = field.group.trim() || "Без группы";
+      if (!acc[groupName]) acc[groupName] = [];
+      acc[groupName].push(field);
       return acc;
     }, {});
   }, [fields]);
 
-  function addField() {
-    const next = createEmptyFieldDraft();
-    setFields((prev) => [...prev, next]);
-    setSelectedFieldId(next.tempId);
-  }
-
-  function removeField(tempId: string) {
-    setFields((prev) => prev.filter((field) => field.tempId !== tempId));
-
-    setSelectedFieldId((current) => {
-      if (current !== tempId) return current;
-
-      const nextFields = fields.filter((field) => field.tempId !== tempId);
-      return nextFields[0]?.tempId ?? null;
+  const createTableAsync = (values: CreateAdminTableInput) =>
+    new Promise<AdminTableMeta>((resolve, reject) => {
+      createTable(
+        { resource: "tables", values },
+        {
+          onSuccess: ({ data }) => resolve(data),
+          onError: reject,
+        },
+      );
     });
-  }
+
+  const createFieldAsync = (values: CreateAdminFieldInput) =>
+    new Promise<AdminFieldMeta>((resolve, reject) => {
+      createField(
+        { resource: "fields", values },
+        {
+          onSuccess: ({ data }) => resolve(data),
+          onError: reject,
+        },
+      );
+    });
 
   function patchField(tempId: string, patch: Partial<FieldDraft>) {
-    setFields((prev) =>
-      prev.map((field) =>
+    setFields((current) =>
+      current.map((field) =>
         field.tempId === tempId ? { ...field, ...patch } : field,
       ),
     );
   }
 
-  function patchRelation(tempId: string, patch: Partial<RelationDraft>) {
-    setFields((prev) =>
-      prev.map((field) =>
+  function patchRelation(tempId: string, patch: Partial<FieldRelationMeta>) {
+    setFields((current) =>
+      current.map((field) =>
         field.tempId === tempId
           ? {
               ...field,
               relation: {
-                ...field.relation,
+                targetTable: field.relation?.targetTable ?? "",
+                targetKey: field.relation?.targetKey ?? "",
+                displayField: field.relation?.displayField ?? "",
+                additionalText: field.relation?.additionalText ?? null,
                 ...patch,
               },
             }
@@ -224,104 +197,88 @@ export function TableCreatePage() {
     );
   }
 
+  function addField() {
+    const next = createFieldDraft();
+    setFields((current) => {
+      const updated = [...current, { ...next, sortOrder: current.length + 1 }];
+      return updated;
+    });
+    setActiveFieldId(next.tempId);
+  }
+
+  function removeField(tempId: string) {
+    setFields((current) =>
+      current
+        .filter((field) => field.tempId !== tempId)
+        .map((field, index) => ({ ...field, sortOrder: index + 1 })),
+    );
+
+    if (activeFieldId === tempId) {
+      const nextField = fields.find((field) => field.tempId !== tempId);
+      setActiveFieldId(nextField?.tempId ?? null);
+    }
+  }
+
   async function onSubmit(values: TableCreateValues) {
     if (fields.length === 0) {
       toast.error("Добавьте хотя бы одно поле");
       return;
     }
 
-    for (const field of fields) {
-      if (!field.name.trim()) {
-        toast.error("У одного из полей не заполнено имя");
-        return;
-      }
-
-      if (!field.label.trim()) {
-        toast.error(`У поля "${field.name || "без имени"}" не заполнен label`);
-        return;
-      }
-    }
-
     try {
-      const createdTable = await createTable({
-        resource: "tables",
-        values: {
-          ...values,
-          description: values.description || null,
-          icon: values.icon || "table",
-        },
+      const createdTable = await createTableAsync({
+        name: values.name,
+        dbName: values.dbName,
+        label: values.label,
+        description: values.description || null,
+        status: values.status,
+        source: values.source,
+        icon: values.icon || "table",
       });
 
-      const tableId = createdTable.data.id;
+      await Promise.all(
+        fields.map(async (field, index) => {
+          const defaultValue = parseJsonOrThrow<FieldDefaultValue>(
+            field.defaultValueText || DEFAULT_VALUE_JSON,
+            `Default value (${field.name || field.label || index + 1})`,
+          );
+          const options = parseJsonOrThrow<FieldOption[] | null>(
+            field.optionsText || DEFAULT_OPTIONS_JSON,
+            `Options (${field.name || field.label || index + 1})`,
+          );
+          const validation = parseJsonOrThrow<FieldValidationMeta>(
+            field.validationText || JSON.stringify(DEFAULT_FIELD_VALIDATION),
+            `Validation (${field.name || field.label || index + 1})`,
+          );
 
-      for (let index = 0; index < fields.length; index += 1) {
-        const field = fields[index];
-
-        const defaultValue = parseJsonOrThrow(
-          field.defaultValueText || DEFAULT_VALUE_JSON,
-          `defaultValue (${field.name})`,
-        );
-
-        const options = parseJsonOrThrow(
-          field.optionsText || DEFAULT_OPTIONS_JSON,
-          `options (${field.name})`,
-        );
-
-        const validation = parseJsonOrThrow(
-          field.validationText || DEFAULT_VALIDATION_JSON,
-          `validation (${field.name})`,
-        );
-
-        await createField({
-          resource: "fields",
-          values: {
-            tableId,
+          await createFieldAsync({
+            tableId: createdTable.id,
             name: field.name.trim(),
             label: field.label.trim(),
-            group: field.group.trim() || null,
-            dbType: field.dbType.trim() || "String",
+            dbType: field.dbType.trim() || "str",
             inputType: field.inputType,
-
             required: field.required,
             editable: field.editable,
             sortable: field.sortable,
             filterable: field.filterable,
             visible: field.visible,
-
-            placeholder: field.placeholder || null,
-            helpText: field.helpText || null,
-
+            group: field.group.trim() || null,
             defaultValue,
             options,
             validation,
-
-            relation: hasRelation(field.relation)
-              ? {
-                  targetTable: field.relation.targetTable.trim(),
-                  targetKey: field.relation.targetKey.trim(),
-                  displayField: field.relation.displayField.trim(),
-                  additionalText: field.relation.additionalText.trim() || null,
-                }
-              : null,
-
+            placeholder: field.placeholder || null,
+            helpText: field.helpText || null,
+            relation: hasRelation(field.relation) ? field.relation : null,
             sortOrder: index + 1,
-          },
-        });
-      }
+          });
+        }),
+      );
+
+      await invalidate({ resource: "tables", invalidates: ["list"] });
+      await invalidate({ resource: "fields", invalidates: ["list"] });
 
       toast.success("Таблица и поля успешно созданы");
-
-      await invalidate({
-        resource: "tables",
-        invalidates: ["list"],
-      });
-
-      await invalidate({
-        resource: "fields",
-        invalidates: ["list"],
-      });
-
-      edit("tables", tableId);
+      edit("tables", createdTable.id);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Не удалось создать таблицу",
@@ -329,20 +286,15 @@ export function TableCreatePage() {
     }
   }
 
-  return (
-    <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 text-sm text-muted-foreground">
-            Таблицы / Создание таблицы
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Создание таблицы
-          </h1>
-        </div>
+  const isSaving = isCreatingTable || isCreatingField;
 
+  return (
+    <CreateView>
+      <CreateViewHeader title="Создание таблицы" />
+
+      <div className="flex justify-end">
         <Button onClick={handleSubmit(onSubmit)} disabled={isSaving}>
-          {isSaving ? "Сохранение..." : "Создать таблицу"}
+          {isSaving ? "Создание..." : "Создать таблицу"}
         </Button>
       </div>
 
@@ -352,12 +304,9 @@ export function TableCreatePage() {
             i
           </div>
           <div>
-            <div className="font-semibold">
-              Здесь можно создать таблицу и сразу описать все поля.
-            </div>
+            <div className="font-semibold">Создайте таблицу и сразу настройте её поля.</div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Поля будут созданы после создания таблицы через стандартные CRUD
-              операции Refine.
+              Таблица и поля будут созданы через стандартные CRUD операции Refine.
             </p>
           </div>
         </CardContent>
@@ -378,7 +327,6 @@ export function TableCreatePage() {
               <CardHeader>
                 <CardTitle>Основная информация</CardTitle>
               </CardHeader>
-
               <CardContent className="grid grid-cols-[180px_1fr] gap-3">
                 <FormLabel>Отображаемое имя *</FormLabel>
                 <Input {...register("label")} />
@@ -401,47 +349,21 @@ export function TableCreatePage() {
               <CardHeader>
                 <CardTitle>Доступные действия</CardTitle>
               </CardHeader>
-
               <CardContent className="space-y-4">
-                <SwitchRow
-                  label="Список"
-                  checked={watch("canList")}
-                  onCheckedChange={(checked) => setValue("canList", checked)}
-                />
-                <SwitchRow
-                  label="Создание"
-                  checked={watch("canCreate")}
-                  onCheckedChange={(checked) => setValue("canCreate", checked)}
-                />
-                <SwitchRow
-                  label="Редактирование"
-                  checked={watch("canEdit")}
-                  onCheckedChange={(checked) => setValue("canEdit", checked)}
-                />
-                <SwitchRow
-                  label="Удаление"
-                  checked={watch("canDelete")}
-                  onCheckedChange={(checked) => setValue("canDelete", checked)}
-                />
+                <SwitchRow label="Список" checked={watch("canList")} onCheckedChange={(checked) => setValue("canList", checked)} />
+                <SwitchRow label="Создание" checked={watch("canCreate")} onCheckedChange={(checked) => setValue("canCreate", checked)} />
+                <SwitchRow label="Редактирование" checked={watch("canEdit")} onCheckedChange={(checked) => setValue("canEdit", checked)} />
+                <SwitchRow label="Удаление" checked={watch("canDelete")} onCheckedChange={(checked) => setValue("canDelete", checked)} />
 
                 <Separator />
 
                 <div className="space-y-2">
                   <FormLabel>Статус</FormLabel>
-                  <Select
-                    value={watch("status")}
-                    onValueChange={(value) =>
-                      setValue("status", value as AdminTableMeta["status"])
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={watch("status")} onValueChange={(value) => setValue("status", value as AdminTableMeta["status"])}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Черновик</SelectItem>
-                      <SelectItem value="needs_setup">
-                        Нужно настроить
-                      </SelectItem>
+                      <SelectItem value="needs_setup">Нужно настроить</SelectItem>
                       <SelectItem value="partial">Частично</SelectItem>
                       <SelectItem value="ready">Готово</SelectItem>
                     </SelectContent>
@@ -450,15 +372,8 @@ export function TableCreatePage() {
 
                 <div className="space-y-2">
                   <FormLabel>Источник</FormLabel>
-                  <Select
-                    value={watch("source")}
-                    onValueChange={(value) =>
-                      setValue("source", value as AdminTableMeta["source"])
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={watch("source")} onValueChange={(value) => setValue("source", value as AdminTableMeta["source"])}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="manual">Ручное создание</SelectItem>
                       <SelectItem value="pydantic">Pydantic</SelectItem>
@@ -470,83 +385,54 @@ export function TableCreatePage() {
           </div>
 
           <Card>
-            <CardHeader className="flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
               <CardTitle>Поля таблицы</CardTitle>
-
               <Button variant="outline" onClick={addField}>
                 <Plus className="size-4" />
                 Добавить поле
               </Button>
             </CardHeader>
-
             <CardContent className="space-y-3">
-              {fields.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Пока нет полей
-                </div>
-              ) : (
-                fields.map((field, index) => {
-                  const isSelected = selectedField?.tempId === field.tempId;
-
-                  return (
-                    <button
-                      key={field.tempId}
-                      type="button"
-                      onClick={() => setSelectedFieldId(field.tempId)}
-                      className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                        isSelected
-                          ? "border-blue-200 bg-blue-50"
-                          : "bg-background hover:bg-muted/40"
-                      }`}
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <strong>{field.name || `field_${index + 1}`}</strong>
-                          <span className="text-xs text-muted-foreground">
-                            {FIELD_INPUT_TYPE_LABELS[field.inputType]}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {field.label || "Без label"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Группа: {field.group || "Без группы"}
-                        </div>
+              {fields.map((field, index) => {
+                const isActive = field.tempId === activeField?.tempId;
+                return (
+                  <button
+                    key={field.tempId}
+                    type="button"
+                    onClick={() => setActiveFieldId(field.tempId)}
+                    className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
+                      isActive ? "border-blue-200 bg-blue-50" : "bg-background hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <strong className="truncate">{field.label || field.name || `Поле ${index + 1}`}</strong>
+                        <span className="truncate text-xs text-muted-foreground">{FIELD_INPUT_TYPE_LABELS[field.inputType]}</span>
                       </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          removeField(field.tempId);
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </button>
-                  );
-                })
-              )}
+                      <div className="truncate text-xs text-muted-foreground">{field.name || "Без имени"}</div>
+                      <div className="truncate text-xs text-muted-foreground">Группа: {field.group || "Без группы"}</div>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); removeField(field.tempId); }}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </button>
+                );
+              })}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Группировка полей</CardTitle>
+              <CardTitle>Предпросмотр группировки</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {Object.entries(groupedPreview).map(([groupName, groupFields]) => (
+              {Object.entries(groupedPreview).map(([groupName, items]) => (
                 <div key={groupName} className="rounded-lg border p-4">
-                  <div className="mb-3 font-medium">{groupName}</div>
+                  <div className="mb-2 font-medium">{groupName}</div>
                   <div className="flex flex-wrap gap-2">
-                    {groupFields.map((field) => (
-                      <div
-                        key={field.tempId}
-                        className="rounded-md bg-muted px-2 py-1 text-xs"
-                      >
-                        {field.label || field.name || "Без имени"}
+                    {items.map((item) => (
+                      <div key={item.tempId} className="rounded-md bg-muted px-2 py-1 text-xs">
+                        {item.label || item.name || "Без имени"}
                       </div>
                     ))}
                   </div>
@@ -560,25 +446,20 @@ export function TableCreatePage() {
           <CardHeader>
             <CardTitle>Настройки поля</CardTitle>
           </CardHeader>
-
-          <CardContent className="space-y-4">
-            {selectedField ? (
+          <CardContent className="p-5">
+            {activeField ? (
               <FieldInspector
-                field={selectedField}
-                onChange={(patch) => patchField(selectedField.tempId, patch)}
-                onRelationChange={(patch) =>
-                  patchRelation(selectedField.tempId, patch)
-                }
+                field={activeField}
+                onChange={(patch) => patchField(activeField.tempId, patch)}
+                onRelationChange={(patch) => patchRelation(activeField.tempId, patch)}
               />
             ) : (
-              <div className="py-10 text-center text-sm text-muted-foreground">
-                Выберите поле
-              </div>
+              <div className="py-10 text-center text-muted-foreground">Выберите поле</div>
             )}
           </CardContent>
         </Card>
       </div>
-    </div>
+    </CreateView>
   );
 }
 
@@ -589,45 +470,31 @@ function FieldInspector({
 }: {
   field: FieldDraft;
   onChange: (patch: Partial<FieldDraft>) => void;
-  onRelationChange: (patch: Partial<RelationDraft>) => void;
+  onRelationChange: (patch: Partial<FieldRelationMeta>) => void;
 }) {
   const relationEnabled =
-    field.inputType === "select" ||
-    field.inputType === "multiselect" ||
-    hasRelation(field.relation);
+    field.inputType === "select" || field.inputType === "multiselect" || hasRelation(field.relation);
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <FormLabel>Имя поля *</FormLabel>
-        <Input
-          value={field.name}
-          onChange={(event) => onChange({ name: event.target.value })}
-        />
+        <Input value={field.name} onChange={(event) => onChange({ name: event.target.value })} />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Label *</FormLabel>
-        <Input
-          value={field.label}
-          onChange={(event) => onChange({ label: event.target.value })}
-        />
+        <Input value={field.label} onChange={(event) => onChange({ label: event.target.value })} />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Группа</FormLabel>
-        <Input
-          value={field.group}
-          onChange={(event) => onChange({ group: event.target.value })}
-        />
+        <Input value={field.group} onChange={(event) => onChange({ group: event.target.value })} />
       </div>
 
       <div className="space-y-2">
         <FormLabel>DB type</FormLabel>
-        <Input
-          value={field.dbType}
-          onChange={(event) => onChange({ dbType: event.target.value })}
-        />
+        <Input value={field.dbType} onChange={(event) => onChange({ dbType: event.target.value })} />
       </div>
 
       <div className="space-y-2">
@@ -635,17 +502,24 @@ function FieldInspector({
         <Select
           value={field.inputType}
           onValueChange={(value) =>
-            onChange({ inputType: value as FieldInputType })
+            onChange({
+              inputType: value as FieldInputType,
+              relation:
+                value === "select" || value === "multiselect"
+                  ? field.relation ?? {
+                      targetTable: "",
+                      targetKey: "id",
+                      displayField: "name",
+                      additionalText: null,
+                    }
+                  : field.relation,
+            })
           }
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {FIELD_INPUT_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>
-                {FIELD_INPUT_TYPE_LABELS[type]}
-              </SelectItem>
+              <SelectItem key={type} value={type}>{FIELD_INPUT_TYPE_LABELS[type]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -653,126 +527,59 @@ function FieldInspector({
 
       <Separator />
 
-      <SwitchRow
-        label="Обязательное"
-        checked={field.required}
-        onCheckedChange={(checked) => onChange({ required: checked })}
-      />
-      <SwitchRow
-        label="Редактируемое"
-        checked={field.editable}
-        onCheckedChange={(checked) => onChange({ editable: checked })}
-      />
-      <SwitchRow
-        label="Сортируемое"
-        checked={field.sortable}
-        onCheckedChange={(checked) => onChange({ sortable: checked })}
-      />
-      <SwitchRow
-        label="Фильтруемое"
-        checked={field.filterable}
-        onCheckedChange={(checked) => onChange({ filterable: checked })}
-      />
-      <SwitchRow
-        label="Видимое"
-        checked={field.visible}
-        onCheckedChange={(checked) => onChange({ visible: checked })}
-      />
+      <SwitchRow label="Обязательное" checked={field.required} onCheckedChange={(checked) => onChange({ required: checked })} />
+      <SwitchRow label="Редактируемое" checked={field.editable} onCheckedChange={(checked) => onChange({ editable: checked })} />
+      <SwitchRow label="Сортируемое" checked={field.sortable} onCheckedChange={(checked) => onChange({ sortable: checked })} />
+      <SwitchRow label="Фильтруемое" checked={field.filterable} onCheckedChange={(checked) => onChange({ filterable: checked })} />
+      <SwitchRow label="Видимое" checked={field.visible} onCheckedChange={(checked) => onChange({ visible: checked })} />
 
       <Separator />
 
       <div className="space-y-2">
         <FormLabel>Placeholder</FormLabel>
-        <Input
-          value={field.placeholder}
-          onChange={(event) => onChange({ placeholder: event.target.value })}
-        />
+        <Input value={field.placeholder} onChange={(event) => onChange({ placeholder: event.target.value })} />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Help text</FormLabel>
-        <Textarea
-          value={field.helpText}
-          onChange={(event) => onChange({ helpText: event.target.value })}
-        />
+        <Textarea value={field.helpText} onChange={(event) => onChange({ helpText: event.target.value })} />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Default value (JSON)</FormLabel>
-        <Textarea
-          className="min-h-[120px] font-mono text-xs"
-          value={field.defaultValueText}
-          onChange={(event) =>
-            onChange({ defaultValueText: event.target.value })
-          }
-        />
+        <Textarea className="min-h-[120px] font-mono text-xs" value={field.defaultValueText} onChange={(event) => onChange({ defaultValueText: event.target.value })} />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Options (JSON)</FormLabel>
-        <Textarea
-          className="min-h-[140px] font-mono text-xs"
-          value={field.optionsText}
-          onChange={(event) => onChange({ optionsText: event.target.value })}
-        />
+        <Textarea className="min-h-[140px] font-mono text-xs" value={field.optionsText} onChange={(event) => onChange({ optionsText: event.target.value })} />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Validation (JSON)</FormLabel>
-        <Textarea
-          className="min-h-[160px] font-mono text-xs"
-          value={field.validationText}
-          onChange={(event) =>
-            onChange({ validationText: event.target.value })
-          }
-        />
+        <Textarea className="min-h-[160px] font-mono text-xs" value={field.validationText} onChange={(event) => onChange({ validationText: event.target.value })} />
       </div>
 
       {relationEnabled ? (
         <>
           <Separator />
-
           <div className="space-y-3">
             <div className="text-sm font-semibold">Настройки relation</div>
-
             <div className="space-y-2">
               <FormLabel>Target table</FormLabel>
-              <Input
-                value={field.relation.targetTable}
-                onChange={(event) =>
-                  onRelationChange({ targetTable: event.target.value })
-                }
-              />
+              <Input value={field.relation?.targetTable ?? ""} onChange={(event) => onRelationChange({ targetTable: event.target.value })} />
             </div>
-
             <div className="space-y-2">
               <FormLabel>Target key</FormLabel>
-              <Input
-                value={field.relation.targetKey}
-                onChange={(event) =>
-                  onRelationChange({ targetKey: event.target.value })
-                }
-              />
+              <Input value={field.relation?.targetKey ?? ""} onChange={(event) => onRelationChange({ targetKey: event.target.value })} />
             </div>
-
             <div className="space-y-2">
               <FormLabel>Display field</FormLabel>
-              <Input
-                value={field.relation.displayField}
-                onChange={(event) =>
-                  onRelationChange({ displayField: event.target.value })
-                }
-              />
+              <Input value={field.relation?.displayField ?? ""} onChange={(event) => onRelationChange({ displayField: event.target.value })} />
             </div>
-
             <div className="space-y-2">
               <FormLabel>Additional text</FormLabel>
-              <Input
-                value={field.relation.additionalText}
-                onChange={(event) =>
-                  onRelationChange({ additionalText: event.target.value })
-                }
-              />
+              <Input value={field.relation?.additionalText ?? ""} onChange={(event) => onRelationChange({ additionalText: event.target.value || null })} />
             </div>
           </div>
         </>
@@ -782,9 +589,7 @@ function FieldInspector({
 }
 
 function FormLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="text-sm font-medium text-muted-foreground">{children}</div>
-  );
+  return <div className="text-sm font-medium text-muted-foreground">{children}</div>;
 }
 
 function SwitchRow({

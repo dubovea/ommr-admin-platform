@@ -1,19 +1,20 @@
-
-import type {
-  FieldInputType,
-  FieldOption,
-  FieldRelationMeta,
-  FieldValidationMeta,
+import {
+  DEFAULT_FIELD_VALIDATION,
+  type CreateAdminFieldInput,
+  type FieldInputType,
+  type FieldOption,
+  type FieldRelationMeta,
 } from "@ommr/shared";
-import { DEFAULT_FIELD_VALIDATION } from "@ommr/shared";
 
 type JsonSchema = {
   title?: string;
+  description?: string;
   type?: string | string[];
   format?: string;
   properties?: Record<string, JsonSchema>;
   required?: string[];
   enum?: unknown[];
+  default?: unknown;
   items?: JsonSchema;
   $ref?: string;
   anyOf?: JsonSchema[];
@@ -23,22 +24,7 @@ type JsonSchema = {
   components?: { schemas?: Record<string, JsonSchema> };
 };
 
-export type ParsedPydanticField = {
-  name: string;
-  label: string;
-  dbType: string;
-  inputType: FieldInputType;
-  required: boolean;
-  editable: boolean;
-  sortable: boolean;
-  filterable: boolean;
-  visible: boolean;
-  group: string | null;
-  defaultValue: unknown | null;
-  options: FieldOption[] | null;
-  validation: FieldValidationMeta;
-  relation: FieldRelationMeta | null;
-};
+export type ParsedPydanticField = Omit<CreateAdminFieldInput, "tableId">;
 
 export type ParsedPydanticTable = {
   name: string;
@@ -60,29 +46,38 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
       name: tableName,
       dbName: tableName,
       label: modelSchema.title || toTitle(tableName),
-      description: null,
-      fields: Object.entries(modelSchema.properties ?? {}).map(([fieldName, fieldSchema]) => {
-        const resolved = resolveNullable(fieldSchema);
-        const relation = getRelation(resolved);
-        const options = getOptions(resolved);
+      description: modelSchema.description ?? null,
+      fields: Object.entries(modelSchema.properties ?? {}).map(
+        ([fieldName, fieldSchema], index) => {
+          const resolved = resolveNullable(fieldSchema);
+          const relation = getRelation(resolved);
+          const options = getOptions(resolved);
 
-        return {
-          name: fieldName,
-          label: toTitle(fieldName),
-          dbType: getDbType(resolved),
-          inputType: relation ? "select" : getInputType(resolved),
-          required: required.has(fieldName),
-          editable: fieldName !== "id" && !fieldName.endsWith("_at"),
-          sortable: true,
-          filterable: true,
-          visible: fieldName !== "id" && !fieldName.endsWith("_at"),
-          group: null,
-          defaultValue: null,
-          options,
-          validation: { ...DEFAULT_FIELD_VALIDATION },
-          relation,
-        };
-      }),
+          return {
+            name: fieldName,
+            label: toTitle(fieldName),
+            dbType: getDbType(resolved),
+            inputType: relation
+              ? resolved.type === "array"
+                ? "multiselect"
+                : "select"
+              : getInputType(resolved),
+            required: required.has(fieldName),
+            editable: fieldName !== "id" && !fieldName.endsWith("_at"),
+            sortable: true,
+            filterable: true,
+            visible: fieldName !== "id" && !fieldName.endsWith("_at"),
+            group: null,
+            defaultValue: getDefaultValue(resolved),
+            options,
+            validation: DEFAULT_FIELD_VALIDATION,
+            placeholder: null,
+            helpText: resolved.description ?? null,
+            relation,
+            sortOrder: index + 1,
+          } satisfies ParsedPydanticField;
+        },
+      ),
     };
   });
 }
@@ -102,35 +97,50 @@ function resolveNullable(schema: JsonSchema): JsonSchema {
   return variants?.find((variant) => variant.type !== "null") ?? schema;
 }
 
-function getRelation(schema: JsonSchema): ParsedPydanticField["relation"] {
+function getRelation(schema: JsonSchema): FieldRelationMeta | null {
   if (!schema.$ref) return null;
+
   const targetName = schema.$ref.split("/").pop();
-  return targetName
-    ? {
-        targetTable: toSnakeCase(targetName),
-        targetKey: "id",
-        displayField: "id",
-        additionalText: null,
-      }
-    : null;
+  if (!targetName) return null;
+
+  return {
+    targetTable: toSnakeCase(targetName),
+    targetKey: "id",
+    displayField: "name",
+    additionalText: null,
+  };
 }
 
 function getOptions(schema: JsonSchema): FieldOption[] | null {
-  if (!schema.enum?.length) return null;
-  return schema.enum.map((value) => ({
-    label: String(value),
-    value: String(value),
-  }));
+  if (schema.enum && schema.enum.length > 0) {
+    return schema.enum.map((item) => ({
+      label: String(item),
+      value: String(item),
+    }));
+  }
+
+  if (schema.type === "array" && schema.items?.enum?.length) {
+    return schema.items.enum.map((item) => ({
+      label: String(item),
+      value: String(item),
+    }));
+  }
+
+  return null;
+}
+
+function getDefaultValue(schema: JsonSchema) {
+  return schema.default ?? null;
 }
 
 function getInputType(schema: JsonSchema): FieldInputType {
+  if (schema.type === "boolean") return "checkbox";
   if (schema.enum) return "select";
   if (schema.type === "array") return "multiselect";
   if (schema.format === "date-time") return "datetime";
   if (schema.format === "date") return "date";
   if (schema.format === "time") return "time";
   if (schema.type === "integer" || schema.type === "number") return "number";
-  if (schema.type === "boolean") return "checkbox";
   return "text";
 }
 
@@ -157,5 +167,5 @@ function toSnakeCase(value: string) {
 function toTitle(value: string) {
   return value
     .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\w/g, (letter) => letter.toUpperCase());
 }

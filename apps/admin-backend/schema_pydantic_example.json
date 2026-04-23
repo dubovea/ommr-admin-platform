@@ -1,0 +1,661 @@
+{
+  "$defs": {
+    "Cargoes": {
+      "description": "Модель данных о грузах.\n\nAttributes:\n    code (str): Код груза\n    ETSNG (str): Код ЕТСНГ (Единая тарифно-статистическая номенклатура грузов)\n    name (str): Наименование груза\n    statweight (str): Статнагрузка",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "code_KSM": {
+          "default": "",
+          "title": "Code Ksm",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "statweight": {
+          "default": 0,
+          "title": "Statweight",
+          "type": "number"
+        }
+      },
+      "title": "Cargoes",
+      "type": "object"
+    },
+    "LoadRackVariantsData": {
+      "description": "Модель данных вариантов эстакад.\n\nAttributes:\n    load_rack_code (str): Код эстакады\n    variant_code (str): Код варианта\n    variant_name (str): Наименование варианта\n    track (str): Код пути\n    riser_count (int): Количество стояков\n    is_loading (int): Флаг погрузки (1 - погрузка, 0 - разгрузка)\n    load_time (int): Время погрузки/разгрузки\n    cargoes (list[str]): Список грузов",
+      "properties": {
+        "load_rack_code": {
+          "default": "",
+          "title": "Load Rack Code",
+          "type": "string"
+        },
+        "variant_code": {
+          "default": "",
+          "title": "Variant Code",
+          "type": "string"
+        },
+        "variant_name": {
+          "default": "",
+          "title": "Variant Name",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        },
+        "riser_count": {
+          "default": 0,
+          "title": "Riser Count",
+          "type": "integer"
+        },
+        "is_loading": {
+          "default": 0,
+          "title": "Is Loading",
+          "type": "integer"
+        },
+        "load_time": {
+          "default": 0,
+          "title": "Load Time",
+          "type": "integer"
+        },
+        "cargoes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cargoes",
+          "type": "array"
+        }
+      },
+      "title": "LoadRackVariantsData",
+      "type": "object"
+    },
+    "LoadRacks": {
+      "description": "Модель данных о погрузочных эстакадах.\n\nAttributes:\n    code (str): Код эстакады\n    name (str): Наименование эстакады",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "LoadRacks",
+      "type": "object"
+    },
+    "LoadRacksProcess": {
+      "description": "Модель данных о процессе налива эстакад\n\nAttributes:\n    load_rack_code (str): Код эстакады\n    variant_code (str): Код варианта эстакады\n    time (int): Время операции",
+      "properties": {
+        "load_rack_code": {
+          "default": "",
+          "title": "Load Rack Code",
+          "type": "string"
+        },
+        "variant_code": {
+          "default": "",
+          "title": "Variant Code",
+          "type": "string"
+        },
+        "time": {
+          "default": 0,
+          "title": "Time",
+          "type": "integer"
+        }
+      },
+      "title": "LoadRacksProcess",
+      "type": "object"
+    },
+    "Locos": {
+      "description": "Модель данных о локомотивах.\n\nAttributes:\n    code (str): Код локомотива\n    name (str): Наименование локомотива\n    speed (int): Скорость локомотива (км/ч)",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "Locos",
+      "type": "object"
+    },
+    "LocosInits": {
+      "description": "Модель данных о начальном положении локомотивов.\n\nAttributes:\n    code (str): Код локомотива\n    track (str): Код пути, на котором находится локомотив",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        }
+      },
+      "title": "LocosInits",
+      "type": "object"
+    },
+    "LocosIntransit": {
+      "description": "Модель данных о локомотивах, находящихся в пути.\n\nAttributes:\n    date (str): Дата поступления\n    code (str): Код локомотива\n    track (str): Код пути, на котором находится локомотив\n    type_code (str): Код пути\n    cargo (str): Груз\n    quantity (int): Количество груза",
+      "properties": {
+        "date": {
+          "default": "",
+          "title": "Date",
+          "type": "string"
+        },
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        },
+        "type_code": {
+          "default": "",
+          "title": "Type Code",
+          "type": "string"
+        },
+        "cargo": {
+          "default": "",
+          "title": "Cargo",
+          "type": "string"
+        },
+        "quantity": {
+          "default": 0,
+          "title": "Quantity",
+          "type": "integer"
+        }
+      },
+      "title": "LocosIntransit",
+      "type": "object"
+    },
+    "LocosManevours": {
+      "description": "Модель данных о управлении  локомотивов.\n\nAttributes:\n    code (str): Код управления ломотивов\n    manevours (list[str]): Список кодов путей, на которых может работать локомотив",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "maneuvours": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Maneuvours",
+          "type": "array"
+        }
+      },
+      "title": "LocosManevours",
+      "type": "object"
+    },
+    "LocosShiftChange": {
+      "description": "Модель данных смены локомотивов.\n\nAttributes:\n    code (str): Код смены локомотивов\n    track (str): Трек\n    from_time (str): Время начала смены\n    to_time (str): Время завершения смены",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        },
+        "from_time": {
+          "default": "",
+          "title": "From Time",
+          "type": "string"
+        },
+        "to_time": {
+          "default": "",
+          "title": "To Time",
+          "type": "string"
+        }
+      },
+      "title": "LocosShiftChange",
+      "type": "object"
+    },
+    "OperationTime": {
+      "description": "Модель данных о времени операций.\n\nAttributes:\n    code (str): Код операции\n    name (str): Наименование операции\n    time (int): Время выполнения операции (минуты)",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "time": {
+          "default": 0,
+          "title": "Time",
+          "type": "integer"
+        }
+      },
+      "title": "OperationTime",
+      "type": "object"
+    },
+    "ResourceUnavailable": {
+      "description": "Модель данных недоступных ресурсов.\n\nAttributes:\n    code (str): Код обслуживания\n    from_date (str): Дата начала обслуживания\n    to_date (str): Дата завершения обслуживания",
+      "properties": {
+        "type_code": {
+          "default": "",
+          "title": "Type Code",
+          "type": "string"
+        },
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "from_date": {
+          "default": "",
+          "title": "From Date",
+          "type": "string"
+        },
+        "to_date": {
+          "default": "",
+          "title": "To Date",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        }
+      },
+      "title": "ResourceUnavailable",
+      "type": "object"
+    },
+    "Shipment": {
+      "description": "Модель данных об отгрузках.\n\nAttributes:\n    code (str): Код отгрузки\n    cargo_code (str): Код груза\n    type_code (str): Код типа вагона\n    track (str): Код пути\n    volume (int): Объем отгрузки\n    priority (int): Приоритет отгрузки",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "cargo_code": {
+          "default": "",
+          "title": "Cargo Code",
+          "type": "string"
+        },
+        "type_code": {
+          "default": "",
+          "title": "Type Code",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        },
+        "volume": {
+          "default": 0,
+          "title": "Volume",
+          "type": "integer"
+        },
+        "priority": {
+          "default": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "deactivated": {
+          "default": false,
+          "title": "Deactivated",
+          "type": "boolean"
+        }
+      },
+      "title": "Shipment",
+      "type": "object"
+    },
+    "Tracks": {
+      "description": "Модель данных о железнодорожных путях.\n\nAttributes:\n    code (str): Код пути\n    name (str): Наименование пути\n    length (int): Длина пути в метрах\n    capacity (int): Вместимость пути (количество вагонов)\n    weigh_code(str): Код весов\n    weigh_name(str): Название весов",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "length": {
+          "default": 0,
+          "title": "Length",
+          "type": "integer"
+        },
+        "capacity": {
+          "default": 0,
+          "title": "Capacity",
+          "type": "integer"
+        },
+        "weigh_code": {
+          "default": "",
+          "title": "Weigh Code",
+          "type": "string"
+        },
+        "weigh_name": {
+          "default": "",
+          "title": "Weigh Name",
+          "type": "string"
+        }
+      },
+      "title": "Tracks",
+      "type": "object"
+    },
+    "TracksLinks": {
+      "description": "Модель данных о связях между путями.\n\nAttributes:\n    from_ (str): Код пути отправления (алиас 'from')\n    to (str): Код пути назначения\n    switch (str): Код стрелочного перевода\n    move_speed (int): Скорость движения\n    move_time (int): Время движения",
+      "properties": {
+        "from": {
+          "title": "From",
+          "type": "string"
+        },
+        "to": {
+          "default": "",
+          "title": "To",
+          "type": "string"
+        },
+        "switch": {
+          "default": "",
+          "title": "Switch",
+          "type": "string"
+        },
+        "operation": {
+          "default": "",
+          "title": "Operation",
+          "type": "string"
+        },
+        "move_speed": {
+          "default": 0,
+          "title": "Move Speed",
+          "type": "integer"
+        },
+        "move_time": {
+          "default": 0,
+          "title": "Move Time",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "from"
+      ],
+      "title": "TracksLinks",
+      "type": "object"
+    },
+    "WagonTypes": {
+      "description": "Модель данных о типах вагонов.\n\nAttributes:\n    code (str): Код типа вагона\n    name (str): Наименование типа вагона\n    statweight (int): Статическая нагрузка (тонн)\n    length (int): Длина вагона (метров)\n    cargoes (list[str]): Список продуктов, которые можно перевозить в данном типе вагонов",
+      "properties": {
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "length": {
+          "default": 0,
+          "title": "Length",
+          "type": "integer"
+        },
+        "cargoes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cargoes",
+          "type": "array"
+        }
+      },
+      "title": "WagonTypes",
+      "type": "object"
+    },
+    "WagonsArrivals": {
+      "description": "Модель данных о прибывающих вагонах.\n\nAttributes:\n    date (str): Дата прибытия\n    type_code (str): Код типа вагона\n    cargo_code (str): Код груза\n    track (str): Код пути назначения\n    quantity (int): Количество вагонов",
+      "properties": {
+        "date": {
+          "default": "",
+          "title": "Date",
+          "type": "string"
+        },
+        "type_code": {
+          "default": "",
+          "title": "Type Code",
+          "type": "string"
+        },
+        "cargo_code": {
+          "default": "",
+          "title": "Cargo Code",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        },
+        "quantity": {
+          "default": 0,
+          "title": "Quantity",
+          "type": "integer"
+        }
+      },
+      "title": "WagonsArrivals",
+      "type": "object"
+    },
+    "WagonsInits": {
+      "description": "Модель данных о начальном положении вагонов.\n\nAttributes:\n    type_code (str): Код типа вагона\n    cargo_code (str): Код груза\n    track (str): Код пути, на котором находятся вагоны\n    quantity (int): Количество вагонов",
+      "properties": {
+        "type_code": {
+          "default": "",
+          "title": "Type Code",
+          "type": "string"
+        },
+        "cargo_code": {
+          "default": "",
+          "title": "Cargo Code",
+          "type": "string"
+        },
+        "track": {
+          "default": "",
+          "title": "Track",
+          "type": "string"
+        },
+        "quantity": {
+          "default": 0,
+          "title": "Quantity",
+          "type": "integer"
+        }
+      },
+      "title": "WagonsInits",
+      "type": "object"
+    }
+  },
+  "description": "Основная модель данных, содержащая всю информацию о железнодорожном маневре.\n\nAttributes:\n    model_name (str): Наименование модели\n    status (str): Статус обработки\n    messages (str): Сообщения системы\n    start_date (str): Дата начала маневра\n    plan_horizon (int): Плановый горизонт (дней)\n    period_length (int): Длительность периода (часов)\n    cargoes (list[Cargoes]): Список грузов\n    tracks (list[Tracks]): Список путей\n    tracks_links (list[TracksLinks]): Список связей между путями (вариант 1)\n    locos (list[Locos]): Список локомотивов\n    load_racks (list[LoadRacks]): Список погрузочных эстакад\n    load_rack_variants (list[LoadRackVariantsData]): Варианты конфигураций эстакад\n    wagon_types (list[WagonTypes]): Типы вагонов\n    operation_time (list[OperationTime]): Время операций\n    shipments (list[Shipment]): Отгрузки\n    locos_inits (list[LocosInits]): Начальное положение локомотивов\n    locos_intransit (list[LocosIntransit]): Локомотивы в пути\n    load_racks_process (list[LoadRacksProcess]): Эстакады налива\n    wagons_inits (list[WagonsInits]): Начальное положение вагонов\n    wagons_arrival (list[WagonsArrivals]): Прибывающие вагоны\n    excel_pages_columns (list[dict[str, list]]): Техническое поле для хранения данных\n    о колонках Excel",
+  "properties": {
+    "model_name": {
+      "default": "",
+      "title": "Model Name",
+      "type": "string"
+    },
+    "status": {
+      "default": "",
+      "title": "Status",
+      "type": "string"
+    },
+    "messages": {
+      "default": "",
+      "title": "Messages",
+      "type": "string"
+    },
+    "start_date": {
+      "default": "",
+      "title": "Start Date",
+      "type": "string"
+    },
+    "plan_horizon": {
+      "default": 0,
+      "title": "Plan Horizon",
+      "type": "integer"
+    },
+    "period_length": {
+      "default": 0,
+      "title": "Period Length",
+      "type": "integer"
+    },
+    "cargoes": {
+      "items": {
+        "$ref": "#/$defs/Cargoes"
+      },
+      "title": "Cargoes",
+      "type": "array"
+    },
+    "tracks": {
+      "items": {
+        "$ref": "#/$defs/Tracks"
+      },
+      "title": "Tracks",
+      "type": "array"
+    },
+    "tracks_links": {
+      "items": {
+        "$ref": "#/$defs/TracksLinks"
+      },
+      "title": "Tracks Links",
+      "type": "array"
+    },
+    "locos": {
+      "items": {
+        "$ref": "#/$defs/Locos"
+      },
+      "title": "Locos",
+      "type": "array"
+    },
+    "locos_manevours": {
+      "items": {
+        "$ref": "#/$defs/LocosManevours"
+      },
+      "title": "Locos Manevours",
+      "type": "array"
+    },
+    "load_racks": {
+      "items": {
+        "$ref": "#/$defs/LoadRacks"
+      },
+      "title": "Load Racks",
+      "type": "array"
+    },
+    "load_rack_variants": {
+      "items": {
+        "$ref": "#/$defs/LoadRackVariantsData"
+      },
+      "title": "Load Rack Variants",
+      "type": "array"
+    },
+    "wagon_types": {
+      "items": {
+        "$ref": "#/$defs/WagonTypes"
+      },
+      "title": "Wagon Types",
+      "type": "array"
+    },
+    "operation_time": {
+      "items": {
+        "$ref": "#/$defs/OperationTime"
+      },
+      "title": "Operation Time",
+      "type": "array"
+    },
+    "shipments": {
+      "items": {
+        "$ref": "#/$defs/Shipment"
+      },
+      "title": "Shipments",
+      "type": "array"
+    },
+    "locos_inits": {
+      "items": {
+        "$ref": "#/$defs/LocosInits"
+      },
+      "title": "Locos Inits",
+      "type": "array"
+    },
+    "locos_intransit": {
+      "items": {
+        "$ref": "#/$defs/LocosIntransit"
+      },
+      "title": "Locos Intransit",
+      "type": "array"
+    },
+    "load_racks_process": {
+      "items": {
+        "$ref": "#/$defs/LoadRacksProcess"
+      },
+      "title": "Load Racks Process",
+      "type": "array"
+    },
+    "wagons_inits": {
+      "items": {
+        "$ref": "#/$defs/WagonsInits"
+      },
+      "title": "Wagons Inits",
+      "type": "array"
+    },
+    "wagons_arrival": {
+      "items": {
+        "$ref": "#/$defs/WagonsArrivals"
+      },
+      "title": "Wagons Arrival",
+      "type": "array"
+    },
+    "resource_unavailable": {
+      "items": {
+        "$ref": "#/$defs/ResourceUnavailable"
+      },
+      "title": "Resource Unavailable",
+      "type": "array"
+    },
+    "locos_shift_change": {
+      "items": {
+        "$ref": "#/$defs/LocosShiftChange"
+      },
+      "title": "Locos Shift Change",
+      "type": "array"
+    },
+    "excel_pages_columns": {
+      "items": {
+        "additionalProperties": {
+          "items": {},
+          "type": "array"
+        },
+        "type": "object"
+      },
+      "title": "Excel Pages Columns",
+      "type": "array"
+    }
+  },
+  "title": "DataManeuver",
+  "type": "object"
+}

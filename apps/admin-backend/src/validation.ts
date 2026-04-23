@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   ADMIN_TABLE_SOURCES,
   ADMIN_TABLE_STATUSES,
+  DEFAULT_FIELD_VALIDATION,
   FIELD_INPUT_TYPES,
   type CreateAdminFieldInput,
   type CreateAdminTableInput,
@@ -17,12 +18,12 @@ export const fieldInputTypeSchema = z.enum(FIELD_INPUT_TYPES);
 export const tableStatusSchema = z.enum(ADMIN_TABLE_STATUSES);
 export const tableSourceSchema = z.enum(ADMIN_TABLE_SOURCES);
 
-export const fieldOptionSchema: z.ZodType<FieldOption> = z.object({
+export const fieldOptionSchema = z.object({
   label: z.string(),
   value: z.string(),
 });
 
-export const fieldValidationSchema: z.ZodType<FieldValidationMeta> = z.object({
+export const fieldValidationSchema = z.object({
   min: z.number().nullable(),
   max: z.number().nullable(),
   minLength: z.number().nullable(),
@@ -30,14 +31,14 @@ export const fieldValidationSchema: z.ZodType<FieldValidationMeta> = z.object({
   pattern: z.string().nullable(),
 });
 
-export const fieldRelationSchema: z.ZodType<FieldRelationMeta> = z.object({
-  targetTable: z.string(),
-  targetKey: z.string(),
-  displayField: z.string(),
+export const fieldRelationSchema = z.object({
+  targetTable: z.string().min(1),
+  targetKey: z.string().min(1),
+  displayField: z.string().min(1),
   additionalText: z.string().nullable().optional(),
 });
 
-export const fieldDefaultValueSchema: z.ZodType<FieldDefaultValue> = z.union([
+export const fieldDefaultValueSchema = z.union([
   z.string(),
   z.number(),
   z.boolean(),
@@ -47,20 +48,22 @@ export const fieldDefaultValueSchema: z.ZodType<FieldDefaultValue> = z.union([
   z.record(z.string(), z.unknown()),
 ]);
 
-export const createTableSchema: z.ZodType<CreateAdminTableInput> = z.object({
+export const createTableSchema = z.object({
   name: z.string().min(1),
   dbName: z.string().min(1),
   label: z.string().min(1),
   description: z.string().nullable().optional(),
-  status: tableStatusSchema.optional(),
-  source: tableSourceSchema.optional(),
-  icon: z.string().nullable().optional(),
-});
+  status: tableStatusSchema.default("needs_setup"),
+  source: tableSourceSchema.default("manual"),
+  icon: z.string().default("table"),
+}) satisfies z.ZodType<CreateAdminTableInput>;
 
-export const updateTableSchema: z.ZodType<UpdateAdminTableInput> = z.object({
-  name: z.string().min(1).optional(),
-  dbName: z.string().min(1).optional(),
+export type CreateTableDto = CreateAdminTableInput;
+
+export const updateTableSchema = z.object({
   label: z.string().min(1).optional(),
+  dbName: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
   status: tableStatusSchema.optional(),
   icon: z.string().nullable().optional(),
@@ -68,29 +71,34 @@ export const updateTableSchema: z.ZodType<UpdateAdminTableInput> = z.object({
   canCreate: z.boolean().optional(),
   canEdit: z.boolean().optional(),
   canDelete: z.boolean().optional(),
-});
+}) satisfies z.ZodType<UpdateAdminTableInput>;
 
-export const createFieldSchema: z.ZodType<CreateAdminFieldInput> = z.object({
+export type UpdateTableDto = UpdateAdminTableInput;
+
+export const createFieldSchema = z.object({
   tableId: z.string().uuid(),
   name: z.string().min(1),
   label: z.string().min(1),
   dbType: z.string().min(1),
   inputType: fieldInputTypeSchema,
-  required: z.boolean().optional(),
-  editable: z.boolean().optional(),
-  sortable: z.boolean().optional(),
-  filterable: z.boolean().optional(),
-  visible: z.boolean().optional(),
+  required: z.boolean().default(false),
+  editable: z.boolean().default(true),
+  sortable: z.boolean().default(false),
+  filterable: z.boolean().default(false),
+  visible: z.boolean().default(true),
   group: z.string().nullable().optional(),
   defaultValue: fieldDefaultValueSchema.optional(),
   options: z.array(fieldOptionSchema).nullable().optional(),
-  validation: fieldValidationSchema.nullable().optional(),
+  validation: fieldValidationSchema.nullable().default(DEFAULT_FIELD_VALIDATION),
   placeholder: z.string().nullable().optional(),
   helpText: z.string().nullable().optional(),
   relation: fieldRelationSchema.nullable().optional(),
-});
+  sortOrder: z.number().int().positive().optional(),
+}) satisfies z.ZodType<CreateAdminFieldInput>;
 
-export const updateFieldSchema: z.ZodType<UpdateAdminFieldInput> = z.object({
+export type CreateFieldDto = CreateAdminFieldInput;
+
+export const updateFieldSchema = z.object({
   label: z.string().min(1).optional(),
   dbType: z.string().min(1).optional(),
   inputType: fieldInputTypeSchema.optional(),
@@ -106,4 +114,7 @@ export const updateFieldSchema: z.ZodType<UpdateAdminFieldInput> = z.object({
   placeholder: z.string().nullable().optional(),
   helpText: z.string().nullable().optional(),
   relation: fieldRelationSchema.nullable().optional(),
-});
+  sortOrder: z.number().int().positive().optional(),
+}) satisfies z.ZodType<UpdateAdminFieldInput>;
+
+export type UpdateFieldDto = UpdateAdminFieldInput;
