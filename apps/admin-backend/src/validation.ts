@@ -32,9 +32,9 @@ export const fieldValidationSchema = z.object({
 });
 
 export const fieldRelationSchema = z.object({
-  targetTable: z.string().min(1),
-  targetKey: z.string().min(1),
-  displayField: z.string().min(1),
+  targetTable: z.string(),
+  targetKey: z.string(),
+  displayField: z.string(),
   additionalText: z.string().nullable().optional(),
 });
 
@@ -50,7 +50,6 @@ export const fieldDefaultValueSchema = z.union([
 
 export const createTableSchema = z.object({
   name: z.string().min(1),
-  dbName: z.string().min(1),
   label: z.string().min(1),
   description: z.string().nullable().optional(),
   status: tableStatusSchema.default("needs_setup"),
@@ -62,7 +61,6 @@ export type CreateTableDto = CreateAdminTableInput;
 
 export const updateTableSchema = z.object({
   label: z.string().min(1).optional(),
-  dbName: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
   status: tableStatusSchema.optional(),
@@ -79,7 +77,7 @@ export const createFieldSchema = z.object({
   tableId: z.string().uuid(),
   name: z.string().min(1),
   label: z.string().min(1),
-  dbType: z.string().min(1),
+  dbType: z.string().optional(),
   inputType: fieldInputTypeSchema,
   required: z.boolean().default(false),
   editable: z.boolean().default(true),
@@ -100,7 +98,7 @@ export type CreateFieldDto = CreateAdminFieldInput;
 
 export const updateFieldSchema = z.object({
   label: z.string().min(1).optional(),
-  dbType: z.string().min(1).optional(),
+  dbType: z.string().optional(),
   inputType: fieldInputTypeSchema.optional(),
   required: z.boolean().optional(),
   editable: z.boolean().optional(),

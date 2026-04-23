@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+
 import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
@@ -15,7 +16,6 @@ tablesRouter.get(
       .select({
         id: adminTables.id,
         name: adminTables.name,
-        dbName: adminTables.dbName,
         label: adminTables.label,
         description: adminTables.description,
         icon: adminTables.icon,
@@ -34,7 +34,7 @@ tablesRouter.get(
       .from(adminTables)
       .leftJoin(adminFields, eq(adminTables.id, adminFields.tableId))
       .groupBy(adminTables.id)
-      .orderBy(asc(adminTables.sortOrder), asc(adminTables.name));
+      .orderBy(desc(adminTables.updatedAt));
 
     res.json({
       data: tables,
@@ -60,7 +60,11 @@ tablesRouter.get(
       .select()
       .from(adminFields)
       .where(eq(adminFields.tableId, req.params.id))
-      .orderBy(asc(adminFields.group), asc(adminFields.sortOrder), asc(adminFields.name));
+      .orderBy(
+        asc(adminFields.group),
+        asc(adminFields.sortOrder),
+        asc(adminFields.name),
+      );
 
     res.json({
       data: {

@@ -28,7 +28,6 @@ export type ParsedPydanticField = Omit<CreateAdminFieldInput, "tableId">;
 
 export type ParsedPydanticTable = {
   name: string;
-  dbName: string;
   label: string;
   description: string | null;
   fields: ParsedPydanticField[];
@@ -44,7 +43,6 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
 
     return {
       name: tableName,
-      dbName: tableName,
       label: modelSchema.title || toTitle(tableName),
       description: modelSchema.description ?? null,
       fields: Object.entries(modelSchema.properties ?? {}).map(
@@ -74,7 +72,6 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
             placeholder: null,
             helpText: resolved.description ?? null,
             relation,
-            sortOrder: index + 1,
           } satisfies ParsedPydanticField;
         },
       ),

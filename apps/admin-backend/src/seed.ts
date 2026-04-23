@@ -11,7 +11,6 @@ type SeedField = Omit<CreateAdminFieldInput, "tableId">;
 
 type SeedTable = {
   name: string;
-  dbName: string;
   label: string;
   description?: string;
   icon: string;
@@ -23,7 +22,6 @@ type SeedTable = {
 const tables: SeedTable[] = [
   {
     name: "users",
-    dbName: "users",
     label: "Пользователи",
     icon: "user",
     status: "needs_setup",
@@ -81,7 +79,6 @@ const tables: SeedTable[] = [
   },
   {
     name: "orders",
-    dbName: "orders",
     label: "Заказы",
     description: "Краткое описание таблицы заказов",
     icon: "cart",
@@ -152,7 +149,6 @@ const tables: SeedTable[] = [
   },
   {
     name: "products",
-    dbName: "products",
     label: "Товары",
     icon: "box",
     status: "ready",
@@ -204,7 +200,6 @@ const tables: SeedTable[] = [
   },
   {
     name: "invoices",
-    dbName: "invoices",
     label: "Счета",
     icon: "file",
     status: "draft",
@@ -246,7 +241,6 @@ const tables: SeedTable[] = [
   },
   {
     name: "categories",
-    dbName: "categories",
     label: "Категории",
     icon: "tag",
     status: "needs_setup",
@@ -284,7 +278,6 @@ for (const table of tables) {
     .insert(adminTables)
     .values({
       name: table.name,
-      dbName: table.dbName,
       label: table.label,
       description: table.description ?? null,
       icon: table.icon,

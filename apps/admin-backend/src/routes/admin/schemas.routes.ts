@@ -24,7 +24,6 @@ schemasRouter.post(
         ? await db
             .update(adminTables)
             .set({
-              dbName: table.dbName,
               label: table.label,
               description: table.description,
               source: "pydantic",
@@ -37,7 +36,6 @@ schemasRouter.post(
             .insert(adminTables)
             .values({
               name: table.name,
-              dbName: table.dbName,
               label: table.label,
               description: table.description,
               source: "pydantic",

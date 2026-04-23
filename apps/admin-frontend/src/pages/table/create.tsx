@@ -70,7 +70,7 @@ function createFieldDraft(): FieldDraft {
     tempId: crypto.randomUUID(),
     name: "",
     label: "",
-    dbType: "str",
+    dbType: "",
     inputType: "text",
     required: false,
     editable: true,
@@ -99,9 +99,9 @@ function parseJsonOrThrow<T>(text: string, label: string): T {
 function hasRelation(relation: FieldRelationMeta | null | undefined) {
   return Boolean(
     relation?.targetTable ||
-      relation?.targetKey ||
-      relation?.displayField ||
-      relation?.additionalText,
+    relation?.targetKey ||
+    relation?.displayField ||
+    relation?.additionalText,
   );
 }
 
@@ -112,29 +112,29 @@ export function TableCreatePage() {
   const [fields, setFields] = useState<FieldDraft[]>([createFieldDraft()]);
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
 
-  const {
-    register,
-    watch,
-    setValue,
-    handleSubmit,
-  } = useForm<TableCreateValues>({
-    defaultValues: {
-      name: "",
-      dbName: "",
-      label: "",
-      description: "",
-      status: "draft",
-      source: "manual",
-      icon: "table",
-      canList: true,
-      canCreate: true,
-      canEdit: true,
-      canDelete: true,
-    },
-  });
+  const { register, watch, setValue, handleSubmit } =
+    useForm<TableCreateValues>({
+      defaultValues: {
+        name: "",
+        label: "",
+        description: "",
+        status: "draft",
+        source: "manual",
+        icon: "table",
+        canList: true,
+        canCreate: true,
+        canEdit: true,
+        canDelete: true,
+      },
+    });
 
-  const { mutate: createTable, isLoading: isCreatingTable } = useCreate<AdminTableMeta>();
-  const { mutate: createField, isLoading: isCreatingField } = useCreate<AdminFieldMeta>();
+  const { mutate: createTable, mutation: mutationTable } =
+    useCreate<AdminTableMeta>();
+  const { mutate: createField, mutation: mutationField } =
+    useCreate<AdminFieldMeta>();
+
+  const isCreatingTable = mutationTable.isPending;
+  const isCreatingField = mutationField.isPending;
 
   const activeField =
     fields.find((field) => field.tempId === activeFieldId) ?? fields[0] ?? null;
@@ -228,7 +228,6 @@ export function TableCreatePage() {
     try {
       const createdTable = await createTableAsync({
         name: values.name,
-        dbName: values.dbName,
         label: values.label,
         description: values.description || null,
         status: values.status,
@@ -255,7 +254,7 @@ export function TableCreatePage() {
             tableId: createdTable.id,
             name: field.name.trim(),
             label: field.label.trim(),
-            dbType: field.dbType.trim() || "str",
+            dbType: field.dbType? field.dbType.trim() : "",
             inputType: field.inputType,
             required: field.required,
             editable: field.editable,
@@ -304,9 +303,12 @@ export function TableCreatePage() {
             i
           </div>
           <div>
-            <div className="font-semibold">Создайте таблицу и сразу настройте её поля.</div>
+            <div className="font-semibold">
+              Создайте таблицу и сразу настройте её поля.
+            </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Таблица и поля будут созданы через стандартные CRUD операции Refine.
+              Таблица и поля будут созданы через стандартные CRUD операции
+              Refine.
             </p>
           </div>
         </CardContent>
@@ -332,9 +334,6 @@ export function TableCreatePage() {
                 <Input {...register("label")} />
 
                 <FormLabel>Имя таблицы в БД *</FormLabel>
-                <Input {...register("dbName")} />
-
-                <FormLabel>Ключ ресурса *</FormLabel>
                 <Input {...register("name")} />
 
                 <FormLabel>Иконка</FormLabel>
@@ -350,20 +349,45 @@ export function TableCreatePage() {
                 <CardTitle>Доступные действия</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <SwitchRow label="Список" checked={watch("canList")} onCheckedChange={(checked) => setValue("canList", checked)} />
-                <SwitchRow label="Создание" checked={watch("canCreate")} onCheckedChange={(checked) => setValue("canCreate", checked)} />
-                <SwitchRow label="Редактирование" checked={watch("canEdit")} onCheckedChange={(checked) => setValue("canEdit", checked)} />
-                <SwitchRow label="Удаление" checked={watch("canDelete")} onCheckedChange={(checked) => setValue("canDelete", checked)} />
+                <SwitchRow
+                  label="Список"
+                  checked={watch("canList")}
+                  onCheckedChange={(checked) => setValue("canList", checked)}
+                />
+                <SwitchRow
+                  label="Создание"
+                  checked={watch("canCreate")}
+                  onCheckedChange={(checked) => setValue("canCreate", checked)}
+                />
+                <SwitchRow
+                  label="Редактирование"
+                  checked={watch("canEdit")}
+                  onCheckedChange={(checked) => setValue("canEdit", checked)}
+                />
+                <SwitchRow
+                  label="Удаление"
+                  checked={watch("canDelete")}
+                  onCheckedChange={(checked) => setValue("canDelete", checked)}
+                />
 
                 <Separator />
 
                 <div className="space-y-2">
                   <FormLabel>Статус</FormLabel>
-                  <Select value={watch("status")} onValueChange={(value) => setValue("status", value as AdminTableMeta["status"])}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={watch("status")}
+                    onValueChange={(value) =>
+                      setValue("status", value as AdminTableMeta["status"])
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Черновик</SelectItem>
-                      <SelectItem value="needs_setup">Нужно настроить</SelectItem>
+                      <SelectItem value="needs_setup">
+                        Нужно настроить
+                      </SelectItem>
                       <SelectItem value="partial">Частично</SelectItem>
                       <SelectItem value="ready">Готово</SelectItem>
                     </SelectContent>
@@ -372,8 +396,15 @@ export function TableCreatePage() {
 
                 <div className="space-y-2">
                   <FormLabel>Источник</FormLabel>
-                  <Select value={watch("source")} onValueChange={(value) => setValue("source", value as AdminTableMeta["source"])}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={watch("source")}
+                    onValueChange={(value) =>
+                      setValue("source", value as AdminTableMeta["source"])
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="manual">Ручное создание</SelectItem>
                       <SelectItem value="pydantic">Pydantic</SelectItem>
@@ -401,18 +432,36 @@ export function TableCreatePage() {
                     type="button"
                     onClick={() => setActiveFieldId(field.tempId)}
                     className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                      isActive ? "border-blue-200 bg-blue-50" : "bg-background hover:bg-muted/40"
+                      isActive
+                        ? "border-blue-200 bg-blue-50"
+                        : "bg-background hover:bg-muted/40"
                     }`}
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 min-w-0">
-                        <strong className="truncate">{field.label || field.name || `Поле ${index + 1}`}</strong>
-                        <span className="truncate text-xs text-muted-foreground">{FIELD_INPUT_TYPE_LABELS[field.inputType]}</span>
+                        <strong className="truncate">
+                          {field.label || field.name || `Поле ${index + 1}`}
+                        </strong>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {FIELD_INPUT_TYPE_LABELS[field.inputType]}
+                        </span>
                       </div>
-                      <div className="truncate text-xs text-muted-foreground">{field.name || "Без имени"}</div>
-                      <div className="truncate text-xs text-muted-foreground">Группа: {field.group || "Без группы"}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {field.name || "Без имени"}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        Группа: {field.group || "Без группы"}
+                      </div>
                     </div>
-                    <Button type="button" variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); removeField(field.tempId); }}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removeField(field.tempId);
+                      }}
+                    >
                       <Trash2 className="size-4" />
                     </Button>
                   </button>
@@ -431,7 +480,10 @@ export function TableCreatePage() {
                   <div className="mb-2 font-medium">{groupName}</div>
                   <div className="flex flex-wrap gap-2">
                     {items.map((item) => (
-                      <div key={item.tempId} className="rounded-md bg-muted px-2 py-1 text-xs">
+                      <div
+                        key={item.tempId}
+                        className="rounded-md bg-muted px-2 py-1 text-xs"
+                      >
                         {item.label || item.name || "Без имени"}
                       </div>
                     ))}
@@ -451,10 +503,14 @@ export function TableCreatePage() {
               <FieldInspector
                 field={activeField}
                 onChange={(patch) => patchField(activeField.tempId, patch)}
-                onRelationChange={(patch) => patchRelation(activeField.tempId, patch)}
+                onRelationChange={(patch) =>
+                  patchRelation(activeField.tempId, patch)
+                }
               />
             ) : (
-              <div className="py-10 text-center text-muted-foreground">Выберите поле</div>
+              <div className="py-10 text-center text-muted-foreground">
+                Выберите поле
+              </div>
             )}
           </CardContent>
         </Card>
@@ -473,28 +529,34 @@ function FieldInspector({
   onRelationChange: (patch: Partial<FieldRelationMeta>) => void;
 }) {
   const relationEnabled =
-    field.inputType === "select" || field.inputType === "multiselect" || hasRelation(field.relation);
+    field.inputType === "select" ||
+    field.inputType === "multiselect" ||
+    hasRelation(field.relation);
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <FormLabel>Имя поля *</FormLabel>
-        <Input value={field.name} onChange={(event) => onChange({ name: event.target.value })} />
+        <Input
+          value={field.name}
+          onChange={(event) => onChange({ name: event.target.value })}
+        />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Label *</FormLabel>
-        <Input value={field.label} onChange={(event) => onChange({ label: event.target.value })} />
+        <Input
+          value={field.label}
+          onChange={(event) => onChange({ label: event.target.value })}
+        />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Группа</FormLabel>
-        <Input value={field.group} onChange={(event) => onChange({ group: event.target.value })} />
-      </div>
-
-      <div className="space-y-2">
-        <FormLabel>DB type</FormLabel>
-        <Input value={field.dbType} onChange={(event) => onChange({ dbType: event.target.value })} />
+        <Input
+          value={field.group}
+          onChange={(event) => onChange({ group: event.target.value })}
+        />
       </div>
 
       <div className="space-y-2">
@@ -506,20 +568,24 @@ function FieldInspector({
               inputType: value as FieldInputType,
               relation:
                 value === "select" || value === "multiselect"
-                  ? field.relation ?? {
+                  ? (field.relation ?? {
                       targetTable: "",
                       targetKey: "id",
                       displayField: "name",
                       additionalText: null,
-                    }
+                    })
                   : field.relation,
             })
           }
         >
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             {FIELD_INPUT_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>{FIELD_INPUT_TYPE_LABELS[type]}</SelectItem>
+              <SelectItem key={type} value={type}>
+                {FIELD_INPUT_TYPE_LABELS[type]}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -527,37 +593,77 @@ function FieldInspector({
 
       <Separator />
 
-      <SwitchRow label="Обязательное" checked={field.required} onCheckedChange={(checked) => onChange({ required: checked })} />
-      <SwitchRow label="Редактируемое" checked={field.editable} onCheckedChange={(checked) => onChange({ editable: checked })} />
-      <SwitchRow label="Сортируемое" checked={field.sortable} onCheckedChange={(checked) => onChange({ sortable: checked })} />
-      <SwitchRow label="Фильтруемое" checked={field.filterable} onCheckedChange={(checked) => onChange({ filterable: checked })} />
-      <SwitchRow label="Видимое" checked={field.visible} onCheckedChange={(checked) => onChange({ visible: checked })} />
+      <SwitchRow
+        label="Обязательное"
+        checked={field.required ?? false}
+        onCheckedChange={(checked) => onChange({ required: checked })}
+      />
+      <SwitchRow
+        label="Редактируемое"
+        checked={field.editable ?? false}
+        onCheckedChange={(checked) => onChange({ editable: checked })}
+      />
+      <SwitchRow
+        label="Сортируемое"
+        checked={field.sortable ?? false}
+        onCheckedChange={(checked) => onChange({ sortable: checked })}
+      />
+      <SwitchRow
+        label="Фильтруемое"
+        checked={field.filterable ?? false}
+        onCheckedChange={(checked) => onChange({ filterable: checked })}
+      />
+      <SwitchRow
+        label="Видимое"
+        checked={field.visible ?? false}
+        onCheckedChange={(checked) => onChange({ visible: checked })}
+      />
 
       <Separator />
 
       <div className="space-y-2">
         <FormLabel>Placeholder</FormLabel>
-        <Input value={field.placeholder} onChange={(event) => onChange({ placeholder: event.target.value })} />
+        <Input
+          value={field.placeholder}
+          onChange={(event) => onChange({ placeholder: event.target.value })}
+        />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Help text</FormLabel>
-        <Textarea value={field.helpText} onChange={(event) => onChange({ helpText: event.target.value })} />
+        <Textarea
+          value={field.helpText}
+          onChange={(event) => onChange({ helpText: event.target.value })}
+        />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Default value (JSON)</FormLabel>
-        <Textarea className="min-h-[120px] font-mono text-xs" value={field.defaultValueText} onChange={(event) => onChange({ defaultValueText: event.target.value })} />
+        <Textarea
+          className="min-h-[120px] font-mono text-xs"
+          value={field.defaultValueText}
+          onChange={(event) =>
+            onChange({ defaultValueText: event.target.value })
+          }
+        />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Options (JSON)</FormLabel>
-        <Textarea className="min-h-[140px] font-mono text-xs" value={field.optionsText} onChange={(event) => onChange({ optionsText: event.target.value })} />
+        <Textarea
+          className="min-h-[140px] font-mono text-xs"
+          value={field.optionsText}
+          onChange={(event) => onChange({ optionsText: event.target.value })}
+        />
       </div>
 
       <div className="space-y-2">
         <FormLabel>Validation (JSON)</FormLabel>
-        <Textarea className="min-h-[160px] font-mono text-xs" value={field.validationText} onChange={(event) => onChange({ validationText: event.target.value })} />
+        <Textarea
+          className="min-h-[160px] font-mono text-xs"
+          value={field.validationText}
+          onChange={(event) => onChange({ validationText: event.target.value })}
+        />
       </div>
 
       {relationEnabled ? (
@@ -567,19 +673,41 @@ function FieldInspector({
             <div className="text-sm font-semibold">Настройки relation</div>
             <div className="space-y-2">
               <FormLabel>Target table</FormLabel>
-              <Input value={field.relation?.targetTable ?? ""} onChange={(event) => onRelationChange({ targetTable: event.target.value })} />
+              <Input
+                value={field.relation?.targetTable ?? ""}
+                onChange={(event) =>
+                  onRelationChange({ targetTable: event.target.value })
+                }
+              />
             </div>
             <div className="space-y-2">
               <FormLabel>Target key</FormLabel>
-              <Input value={field.relation?.targetKey ?? ""} onChange={(event) => onRelationChange({ targetKey: event.target.value })} />
+              <Input
+                value={field.relation?.targetKey ?? ""}
+                onChange={(event) =>
+                  onRelationChange({ targetKey: event.target.value })
+                }
+              />
             </div>
             <div className="space-y-2">
               <FormLabel>Display field</FormLabel>
-              <Input value={field.relation?.displayField ?? ""} onChange={(event) => onRelationChange({ displayField: event.target.value })} />
+              <Input
+                value={field.relation?.displayField ?? ""}
+                onChange={(event) =>
+                  onRelationChange({ displayField: event.target.value })
+                }
+              />
             </div>
             <div className="space-y-2">
               <FormLabel>Additional text</FormLabel>
-              <Input value={field.relation?.additionalText ?? ""} onChange={(event) => onRelationChange({ additionalText: event.target.value || null })} />
+              <Input
+                value={field.relation?.additionalText ?? ""}
+                onChange={(event) =>
+                  onRelationChange({
+                    additionalText: event.target.value || null,
+                  })
+                }
+              />
             </div>
           </div>
         </>
@@ -589,7 +717,9 @@ function FieldInspector({
 }
 
 function FormLabel({ children }: { children: React.ReactNode }) {
-  return <div className="text-sm font-medium text-muted-foreground">{children}</div>;
+  return (
+    <div className="text-sm font-medium text-muted-foreground">{children}</div>
+  );
 }
 
 function SwitchRow({

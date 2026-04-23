@@ -22,7 +22,7 @@ export function Sidebar() {
       <div className="flex items-center gap-3 px-2">
         <Database className="size-8 text-blue-600" />
         <div className="leading-tight">
-          <div className="text-xl font-semibold">Schema</div>
+          <div className="text-xl font-semibold">PySchema</div>
           <div className="text-xl font-semibold">Manager</div>
         </div>
       </div>
@@ -48,7 +48,7 @@ export function Sidebar() {
         <Database className="size-4 text-blue-600" />
         <div>
           <div className="text-xs text-muted-foreground">Проект</div>
-          <div className="text-sm font-semibold">E-Commerce</div>
+          <div className="text-sm font-semibold">OMMR</div>
         </div>
       </Card>
     </aside>

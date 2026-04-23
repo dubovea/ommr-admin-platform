@@ -101,7 +101,7 @@ export type AdminFieldMeta = {
   tableId: string;
   name: string;
   label: string;
-  dbType: string;
+  dbType?: string;
   inputType: FieldInputType;
   required: boolean;
   editable: boolean;
@@ -123,7 +123,6 @@ export type AdminFieldMeta = {
 export type AdminTableMeta = {
   id: string;
   name: string;
-  dbName: string;
   label: string;
   description?: string | null;
   icon?: string | null;
@@ -142,17 +141,13 @@ export type AdminTableMeta = {
   updatedAt?: string;
 };
 
-export type CreateAdminTableInput = Pick<
-  AdminTableMeta,
-  "name" | "dbName" | "label"
-> &
+export type CreateAdminTableInput = Pick<AdminTableMeta, "name" | "label"> &
   Partial<Pick<AdminTableMeta, "description" | "status" | "source" | "icon">>;
 
 export type UpdateAdminTableInput = Partial<
   Pick<
     AdminTableMeta,
     | "name"
-    | "dbName"
     | "label"
     | "description"
     | "status"

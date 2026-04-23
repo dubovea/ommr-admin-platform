@@ -29,6 +29,7 @@ import {
 import { DeleteItemsToolbar } from "@/components/DeleteItemsToolbar";
 import { pluralizeRu } from "@/lib/ru-plural";
 import { DeleteItemsDialog } from "@/components/DeleteItemsDialog";
+import { DataTableFilterCombobox, DataTableFilterDropdownText } from "@/components/refine-ui/data-table/data-table-filter";
 
 export function TableListPage() {
   const { edit } = useNavigation();
@@ -46,6 +47,18 @@ export function TableListPage() {
 
   const { mutate: deleteMany, mutation } = useDeleteMany<AdminTableMeta>();
   const isLoading = mutation.isPending;
+  const SOURCE_OPTIONS = [
+    { label: "Pydantic", value: "pydantic" },
+    { label: "Manual", value: "manual" },
+  ] as const;
+
+  const STATUS_OPTIONS = [
+    { label: "Черновик", value: "draft" },
+    { label: "Нужно настроить", value: "needs_setup" },
+    { label: "Готово", value: "ready" },
+    { label: "Частично", value: "partial" },
+  ] as const;
+
   const columns = useMemo<ColumnDef<AdminTableMeta>[]>(
     () => [
       {
@@ -55,6 +68,7 @@ export function TableListPage() {
         maxSize: SELECTION_COLUMN_SIZE,
         enableSorting: false,
         enableHiding: false,
+        enableColumnFilter: false,
         header: ({ table }) => (
           <TableSelectionCheckBox
             checked={getSelectionCheckboxState(
@@ -82,11 +96,20 @@ export function TableListPage() {
       {
         id: "name",
         accessorKey: "name",
-        minSize: 200,
-        header: ({ column }) => (
+        minSize: 240,
+        meta: {
+          filterOperator: "contains",
+        },
+        header: ({ column, table }) => (
           <div className="flex items-center gap-1">
             <span>Таблица</span>
             <DataTableSorter column={column} />
+            <DataTableFilterDropdownText
+              column={column}
+              table={table}
+              defaultOperator="contains"
+              placeholder="Поиск по key"
+            />
           </div>
         ),
         cell: ({ row }) => {
@@ -124,44 +147,124 @@ export function TableListPage() {
       {
         id: "label",
         accessorKey: "label",
-        header: "Название",
-      },
-      {
-        id: "source",
-        accessorKey: "source",
-        header: "Источник",
-        cell: () => (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span className="grid size-5 place-items-center rounded bg-emerald-100 text-xs font-bold text-emerald-700">
-              P
-            </span>
-            Pydantic
+        minSize: 220,
+        meta: {
+          filterOperator: "contains",
+        },
+        header: ({ column, table }) => (
+          <div className="flex items-center gap-1">
+            <span>Название</span>
+            <DataTableSorter column={column} />
+            <DataTableFilterDropdownText
+              column={column}
+              table={table}
+              defaultOperator="contains"
+              placeholder="Поиск по label"
+            />
           </div>
         ),
       },
       {
+        id: "source",
+        accessorKey: "source",
+        minSize: 180,
+        meta: {
+          filterOperator: "in",
+        },
+        header: ({ column }) => (
+          <div className="flex items-center gap-1">
+            <span>Источник</span>
+            <DataTableSorter column={column} />
+            <DataTableFilterCombobox
+              column={column}
+              defaultOperator="in"
+              multiple
+              options={SOURCE_OPTIONS.map((item) => ({
+                label: item.label,
+                value: item.value,
+              }))}
+            />
+          </div>
+        ),
+        cell: ({ row }) => {
+          const value = row.original.source;
+
+          return (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="grid size-5 place-items-center rounded bg-emerald-100 text-xs font-bold text-emerald-700">
+                {value === "pydantic" ? "P" : "M"}
+              </span>
+              {value === "pydantic" ? "Pydantic" : "Manual"}
+            </div>
+          );
+        },
+      },
+      {
         id: "status",
         accessorKey: "status",
-        header: "Статус",
+        minSize: 180,
+        meta: {
+          filterOperator: "in",
+        },
+        header: ({ column }) => (
+          <div className="flex items-center gap-1">
+            <span>Статус</span>
+            <DataTableSorter column={column} />
+            <DataTableFilterCombobox
+              column={column}
+              defaultOperator="in"
+              multiple
+              options={STATUS_OPTIONS.map((item) => ({
+                label: item.label,
+                value: item.value,
+              }))}
+            />
+          </div>
+        ),
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
         id: "updatedAt",
         accessorKey: "updatedAt",
-        header: "Обновлено",
-        cell: () => <span className="text-muted-foreground">Сегодня</span>,
+        minSize: 150,
+        meta: {
+          filterOperator: "contains",
+        },
+        header: ({ column, table }) => (
+          <div className="flex items-center gap-1">
+            <span>Обновлено</span>
+            <DataTableSorter column={column} />
+            <DataTableFilterDropdownText
+              column={column}
+              table={table}
+              defaultOperator="contains"
+              placeholder="Поиск по дате"
+            />
+          </div>
+        ),
+        cell: ({ row }) => {
+          const value = row.original.updatedAt
+            ? new Date(row.original.updatedAt).toLocaleString()
+            : "";
+
+          return <span className="text-muted-foreground">{value}</span>;
+        },
       },
       {
         id: "actions",
-        header: "Действия",
         enableSorting: false,
         enableHiding: false,
+        enableColumnFilter: false,
+        size: 60,
+        minSize: 60,
+        maxSize: 60,
         cell: ({ row }) => (
           <div
-            className="flex justify-center"
+            className="flex justify-end"
             onClick={(event) => event.stopPropagation()}
           >
             <Button
+              className="cursor-pointer"
               variant="outline"
               size="icon"
               onClick={() => edit("tables", row.original.id)}
@@ -322,7 +425,7 @@ export function TableListPage() {
 
               <div className="grid gap-3 text-sm">
                 <MetaRow label="Название" value={selectedTable.label} />
-                <MetaRow label="Имя в БД" value={selectedTable.dbName} />
+                <MetaRow label="Имя в БД" value={selectedTable.name} />
                 <MetaRow
                   label="Описание"
                   value={selectedTable.description || "—"}

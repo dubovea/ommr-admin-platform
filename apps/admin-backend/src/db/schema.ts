@@ -40,7 +40,6 @@ export const adminTables = pgTable("admin_tables", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   name: text("name").notNull(),
-  dbName: text("db_name").notNull(),
   label: text("label").notNull(),
   description: text("description"),
 
@@ -72,7 +71,7 @@ export const adminFields = pgTable("admin_fields", {
 
   name: text("name").notNull(),
   label: text("label").notNull(),
-  dbType: text("db_type").notNull(),
+  dbType: text("db_type"),
 
   inputType: fieldInputTypeEnum("input_type").notNull(),
   visible: boolean("visible").notNull().default(true),
