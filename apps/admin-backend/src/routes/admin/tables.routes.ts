@@ -60,7 +60,7 @@ tablesRouter.get(
       .select()
       .from(adminFields)
       .where(eq(adminFields.tableId, req.params.id))
-      .orderBy(asc(adminFields.sortOrder), asc(adminFields.name));
+      .orderBy(asc(adminFields.group), asc(adminFields.sortOrder), asc(adminFields.name));
 
     res.json({
       data: {

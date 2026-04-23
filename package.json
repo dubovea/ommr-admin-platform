@@ -18,6 +18,7 @@
     "db:migrate": "yarn workspace @ommr/admin-backend db:migrate",
     "db:push": "yarn workspace @ommr/admin-backend db:push",
     "db:studio": "yarn workspace @ommr/admin-backend db:studio",
+    "db:reset": "yarn workspace @ommr/admin-backend db:reset",
     "seed": "yarn workspace @ommr/admin-backend seed"
   },
   "devDependencies": {

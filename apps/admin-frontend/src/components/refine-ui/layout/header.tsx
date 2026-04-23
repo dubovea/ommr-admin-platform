@@ -1,13 +1,11 @@
 import { useRef } from "react";
-import { useNavigation } from "@refinedev/core";
-import { Bell, Plus, Search, Upload } from "lucide-react";
+import { Bell, Search, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useImportPydanticSchema } from "@/providers/pydantic";
 import { UserInfo } from "./user-info";
 
 export function Header() {
-  const { create } = useNavigation();
   return (
     <header className="flex h-20 items-center justify-between border-b bg-card px-7">
       <div className="relative w-[520px] max-w-[40vw]">
@@ -22,10 +20,6 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3">
         <ImportPydanticButton />
-        <Button onClick={() => create("tables")}>
-          <Plus className="size-4" />
-          Создать таблицу
-        </Button>
         <Button variant="ghost" size="icon">
           <Bell className="size-5" />
         </Button>

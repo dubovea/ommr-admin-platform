@@ -12,7 +12,7 @@ import { Layout } from "./components/refine-ui/layout/layout";
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
-import { TableEditPage, TableListPage } from "./pages/table";
+import { TableCreatePage, TableEditPage, TableListPage } from "./pages/table";
 import { dataProvider } from "./providers/data";
 
 const enableDevtools = import.meta.env.VITE_REFINE_DEVTOOLS === "true";
@@ -48,6 +48,7 @@ function RefineApp() {
           <Route path="/tables">
             <Route index element={<TableListPage />} />
             <Route path="list" element={<TableListPage />} />
+            <Route path="create" element={<TableCreatePage />} />
             <Route path="edit/:id" element={<TableEditPage />} />
           </Route>
           <Route path="*" element={<ErrorComponent />} />

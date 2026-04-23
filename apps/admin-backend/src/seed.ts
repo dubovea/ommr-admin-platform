@@ -1,9 +1,13 @@
+
 import "dotenv/config";
 import type {
   AdminTableStatus,
   FieldInputType,
+  FieldOption,
   FieldRelationMeta,
+  FieldValidationMeta,
 } from "@ommr/shared";
+import { DEFAULT_FIELD_VALIDATION } from "@ommr/shared";
 import { db } from "./db/index.js";
 import { adminFields, adminTables } from "./db/schema.js";
 
@@ -16,8 +20,11 @@ type SeedField = {
   editable?: boolean;
   sortable?: boolean;
   filterable?: boolean;
-  showInList?: boolean;
-  showInForm?: boolean;
+  visible?: boolean;
+  group?: string | null;
+  defaultValue?: unknown;
+  options?: FieldOption[] | null;
+  validation?: FieldValidationMeta | null;
   placeholder?: string;
   helpText?: string;
   relation?: FieldRelationMeta | null;
@@ -33,6 +40,9 @@ type SeedTable = {
   sortOrder: number;
   fields: SeedField[];
 };
+
+const enumOptions = (...values: string[]): FieldOption[] =>
+  values.map((value) => ({ label: value, value }));
 
 const tables: SeedTable[] = [
   {
@@ -52,7 +62,8 @@ const tables: SeedTable[] = [
         editable: false,
         sortable: true,
         filterable: true,
-        showInForm: false,
+        visible: false,
+        group: "Служебные",
       },
       {
         name: "full_name",
@@ -62,6 +73,7 @@ const tables: SeedTable[] = [
         required: true,
         sortable: true,
         filterable: true,
+        group: "Основное",
       },
       {
         name: "email",
@@ -71,6 +83,7 @@ const tables: SeedTable[] = [
         required: true,
         sortable: true,
         filterable: true,
+        group: "Основное",
       },
       {
         name: "role",
@@ -79,6 +92,9 @@ const tables: SeedTable[] = [
         inputType: "select",
         required: true,
         filterable: true,
+        group: "Основное",
+        options: enumOptions("admin", "manager", "viewer"),
+        defaultValue: "viewer",
       },
       {
         name: "created_at",
@@ -89,7 +105,8 @@ const tables: SeedTable[] = [
         editable: false,
         sortable: true,
         filterable: true,
-        showInForm: false,
+        visible: false,
+        group: "Служебные",
       },
     ],
   },
@@ -111,7 +128,8 @@ const tables: SeedTable[] = [
         editable: false,
         sortable: true,
         filterable: true,
-        showInForm: false,
+        visible: false,
+        group: "Служебные",
       },
       {
         name: "user_id",
@@ -122,14 +140,15 @@ const tables: SeedTable[] = [
         editable: true,
         sortable: true,
         filterable: true,
-        showInList: true,
-        showInForm: true,
+        visible: true,
+        group: "Основное",
         placeholder: "Выберите покупателя...",
         helpText: "Укажите покупателя, оформившего заказ",
         relation: {
           targetTable: "users",
-          relationType: "many-to-one",
+          targetKey: "id",
           displayField: "full_name",
+          additionalText: "email",
         },
       },
       {
@@ -141,6 +160,10 @@ const tables: SeedTable[] = [
         editable: true,
         sortable: true,
         filterable: true,
+        visible: true,
+        group: "Основное",
+        options: enumOptions("new", "paid", "shipped", "cancelled"),
+        defaultValue: "new",
       },
       {
         name: "total_amount",
@@ -151,6 +174,12 @@ const tables: SeedTable[] = [
         editable: true,
         sortable: true,
         filterable: true,
+        visible: true,
+        group: "Финансы",
+        validation: {
+          ...DEFAULT_FIELD_VALIDATION,
+          min: 0,
+        },
       },
       {
         name: "created_at",
@@ -161,7 +190,8 @@ const tables: SeedTable[] = [
         editable: false,
         sortable: true,
         filterable: true,
-        showInForm: false,
+        visible: false,
+        group: "Служебные",
       },
     ],
   },
@@ -182,7 +212,8 @@ const tables: SeedTable[] = [
         editable: false,
         sortable: true,
         filterable: true,
-        showInForm: false,
+        visible: false,
+        group: "Служебные",
       },
       {
         name: "name",
@@ -192,6 +223,7 @@ const tables: SeedTable[] = [
         required: true,
         sortable: true,
         filterable: true,
+        group: "Основное",
       },
       {
         name: "price",
@@ -201,6 +233,7 @@ const tables: SeedTable[] = [
         required: true,
         sortable: true,
         filterable: true,
+        group: "Основное",
       },
       {
         name: "category_id",
@@ -209,10 +242,12 @@ const tables: SeedTable[] = [
         inputType: "select",
         required: true,
         filterable: true,
+        group: "Основное",
         relation: {
           targetTable: "categories",
-          relationType: "many-to-one",
+          targetKey: "id",
           displayField: "name",
+          additionalText: null,
         },
       },
     ],
@@ -234,7 +269,8 @@ const tables: SeedTable[] = [
         editable: false,
         sortable: true,
         filterable: true,
-        showInForm: false,
+        visible: false,
+        group: "Служебные",
       },
       {
         name: "order_id",
@@ -242,10 +278,12 @@ const tables: SeedTable[] = [
         dbType: "int",
         inputType: "select",
         required: true,
+        group: "Основное",
         relation: {
           targetTable: "orders",
-          relationType: "many-to-one",
+          targetKey: "id",
           displayField: "id",
+          additionalText: "status",
         },
       },
       {
@@ -256,6 +294,7 @@ const tables: SeedTable[] = [
         required: true,
         sortable: true,
         filterable: true,
+        group: "Основное",
       },
     ],
   },
@@ -276,7 +315,8 @@ const tables: SeedTable[] = [
         editable: false,
         sortable: true,
         filterable: true,
-        showInForm: false,
+        visible: false,
+        group: "Служебные",
       },
       {
         name: "name",
@@ -286,6 +326,7 @@ const tables: SeedTable[] = [
         required: true,
         sortable: true,
         filterable: true,
+        group: "Основное",
       },
     ],
   },
@@ -320,8 +361,11 @@ for (const table of tables) {
       editable: field.editable ?? true,
       sortable: field.sortable ?? false,
       filterable: field.filterable ?? false,
-      showInList: field.showInList ?? true,
-      showInForm: field.showInForm ?? true,
+      visible: field.visible ?? true,
+      group: field.group ?? null,
+      defaultValue: field.defaultValue ?? null,
+      options: field.options ?? null,
+      validation: field.validation ?? { ...DEFAULT_FIELD_VALIDATION },
       placeholder: field.placeholder ?? null,
       helpText: field.helpText ?? null,
       relation: field.relation ?? null,

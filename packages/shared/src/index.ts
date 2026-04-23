@@ -1,30 +1,37 @@
+
 export const FIELD_INPUT_TYPES = [
   "text",
+  "textarea",
   "number",
+  "checkbox",
+  "switch",
   "date",
   "time",
   "datetime",
   "select",
-  "multiselect"
+  "multiselect",
 ] as const;
 
 export type FieldInputType = (typeof FIELD_INPUT_TYPES)[number];
 
 export const FIELD_INPUT_TYPE_LABELS: Record<FieldInputType, string> = {
   text: "Текст",
+  textarea: "Многострочный текст",
   number: "Числовой ввод",
+  checkbox: "Флажок",
+  switch: "Переключатель",
   date: "Дата",
   time: "Время",
   datetime: "Дата и время",
   select: "Выпадающий список (одиночный выбор)",
-  multiselect: "Выпадающий список (мульти выбор)"
+  multiselect: "Выпадающий список (множественный выбор)",
 };
 
 export const ADMIN_TABLE_STATUSES = [
   "draft",
   "needs_setup",
   "ready",
-  "partial"
+  "partial",
 ] as const;
 
 export type AdminTableStatus = (typeof ADMIN_TABLE_STATUSES)[number];
@@ -33,26 +40,39 @@ export const ADMIN_TABLE_STATUS_LABELS: Record<AdminTableStatus, string> = {
   draft: "Черновик",
   needs_setup: "Нужно настроить",
   ready: "Готово",
-  partial: "Частично"
+  partial: "Частично",
 };
 
 export const ADMIN_TABLE_SOURCES = ["pydantic", "manual"] as const;
 
 export type AdminTableSource = (typeof ADMIN_TABLE_SOURCES)[number];
 
-export const RELATION_TYPES = [
-  "many-to-one",
-  "one-to-many",
-  "one-to-one",
-  "many-to-many"
-] as const;
+export type FieldOption = {
+  label: string;
+  value: string;
+};
 
-export type RelationType = (typeof RELATION_TYPES)[number];
+export type FieldValidationMeta = {
+  min: number | null;
+  max: number | null;
+  minLength: number | null;
+  maxLength: number | null;
+  pattern: string | null;
+};
+
+export const DEFAULT_FIELD_VALIDATION: FieldValidationMeta = {
+  min: null,
+  max: null,
+  minLength: null,
+  maxLength: null,
+  pattern: null,
+};
 
 export type FieldRelationMeta = {
   targetTable: string;
-  relationType: RelationType;
+  targetKey: string;
   displayField: string;
+  additionalText?: string | null;
 };
 
 export type AdminTableActionKey =
@@ -66,8 +86,16 @@ export type AdminFieldFlagKey =
   | "editable"
   | "sortable"
   | "filterable"
-  | "showInList"
-  | "showInForm";
+  | "visible";
+
+export type FieldDefaultValue =
+  | string
+  | number
+  | boolean
+  | null
+  | string[]
+  | number[]
+  | Record<string, unknown>;
 
 export type AdminFieldMeta = {
   id: string;
@@ -80,8 +108,11 @@ export type AdminFieldMeta = {
   editable: boolean;
   sortable: boolean;
   filterable: boolean;
-  showInList: boolean;
-  showInForm: boolean;
+  visible: boolean;
+  group?: string | null;
+  defaultValue?: FieldDefaultValue;
+  options?: FieldOption[] | null;
+  validation?: FieldValidationMeta | null;
   placeholder?: string | null;
   helpText?: string | null;
   relation?: FieldRelationMeta | null;
@@ -116,9 +147,7 @@ export type CreateAdminTableInput = Pick<
   AdminTableMeta,
   "name" | "dbName" | "label"
 > &
-  Partial<
-    Pick<AdminTableMeta, "description" | "status" | "source" | "icon">
-  >;
+  Partial<Pick<AdminTableMeta, "description" | "status" | "source" | "icon">>;
 
 export type UpdateAdminTableInput = Partial<
   Pick<
@@ -147,8 +176,14 @@ export type CreateAdminFieldInput = Pick<
       | "editable"
       | "sortable"
       | "filterable"
-      | "showInList"
-      | "showInForm"
+      | "visible"
+      | "group"
+      | "defaultValue"
+      | "options"
+      | "validation"
+      | "placeholder"
+      | "helpText"
+      | "relation"
     >
   >;
 
@@ -162,8 +197,11 @@ export type UpdateAdminFieldInput = Partial<
     | "editable"
     | "sortable"
     | "filterable"
-    | "showInList"
-    | "showInForm"
+    | "visible"
+    | "group"
+    | "defaultValue"
+    | "options"
+    | "validation"
     | "placeholder"
     | "helpText"
     | "relation"

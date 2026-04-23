@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import { asc, eq, inArray } from "drizzle-orm";
 
@@ -20,11 +21,19 @@ fieldsRouter.get(
             .select()
             .from(adminFields)
             .where(eq(adminFields.tableId, tableId))
-            .orderBy(asc(adminFields.sortOrder), asc(adminFields.name))
+            .orderBy(
+              asc(adminFields.group),
+              asc(adminFields.sortOrder),
+              asc(adminFields.name),
+            )
         : await db
             .select()
             .from(adminFields)
-            .orderBy(asc(adminFields.sortOrder), asc(adminFields.name));
+            .orderBy(
+              asc(adminFields.group),
+              asc(adminFields.sortOrder),
+              asc(adminFields.name),
+            );
 
     res.json({
       data: fields,

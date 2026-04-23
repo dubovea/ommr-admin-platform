@@ -1,3 +1,4 @@
+
 import {
   useCallback,
   useEffect,
@@ -9,6 +10,7 @@ import {
   type HttpError,
   useDeleteMany,
   useInvalidate,
+  useList,
   useUpdate,
 } from "@refinedev/core";
 import { useForm } from "@refinedev/react-hook-form";
@@ -20,13 +22,16 @@ import { Link2, Pencil, Trash2, Upload, X } from "lucide-react";
 import { useParams } from "react-router";
 
 import {
+  DEFAULT_FIELD_VALIDATION,
   FIELD_INPUT_TYPE_LABELS,
   FIELD_INPUT_TYPES,
   type AdminFieldFlagKey,
   type AdminFieldMeta,
   type AdminTableActionKey,
   type AdminTableMeta,
-  type RelationType,
+  type FieldOption,
+  type FieldRelationMeta,
+  type FieldValidationMeta,
   type UpdateAdminFieldInput,
   type UpdateAdminTableInput,
 } from "@ommr/shared";
@@ -59,12 +64,6 @@ import {
 } from "@/components/TableSelectionCheckBox";
 import { pluralizeRu } from "@/lib/ru-plural";
 import { DeleteItemsDialog } from "@/components/DeleteItemsDialog";
-import {
-  ADMIN_DISPLAY_FIELD_LABELS,
-  ADMIN_TABLE_LABELS,
-  getAdminDisplayFieldLabel,
-  getAdminTableLabel,
-} from "@/lib/admin-field-labels";
 import { DeleteItemsToolbar } from "@/components/DeleteItemsToolbar";
 
 export function TableEditPage() {
@@ -83,6 +82,27 @@ export function TableEditPage() {
     hasSelectedRows: hasSelectedFields,
     removeSelectedIds: removeSelectedFieldIds,
   } = useTableSelection();
+
+  const {
+    data: tablesData,
+  } = useList<AdminTableMeta>({
+    resource: "tables",
+    pagination: {
+      mode: "off",
+    },
+    queryOptions: {
+      staleTime: 60_000,
+    },
+  });
+
+  const tableNames = useMemo(
+    () =>
+      (tablesData?.data ?? [])
+        .map((table) => table.name)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, "ru")),
+    [tablesData?.data],
+  );
 
   const {
     register,
@@ -186,6 +206,20 @@ export function TableEditPage() {
         },
       },
       {
+        id: "group",
+        accessorKey: "group",
+        header: "Группа",
+        cell: ({ row }) => (
+          row.original.group ? (
+            <span className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+              {row.original.group}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )
+        ),
+      },
+      {
         id: "inputType",
         accessorKey: "inputType",
         header: "Тип поля",
@@ -224,19 +258,11 @@ export function TableEditPage() {
         ),
       },
       {
-        id: "showInList",
-        accessorKey: "showInList",
-        header: "В таблице",
+        id: "visible",
+        accessorKey: "visible",
+        header: "Видимость",
         cell: ({ row }) => (
-          <Checkbox checked={row.original.showInList} disabled />
-        ),
-      },
-      {
-        id: "showInForm",
-        accessorKey: "showInForm",
-        header: "В форме",
-        cell: ({ row }) => (
-          <Checkbox checked={row.original.showInForm} disabled />
+          <Checkbox checked={row.original.visible} disabled />
         ),
       },
       {
@@ -436,7 +462,7 @@ export function TableEditPage() {
         </TabsList>
       </Tabs>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_380px] gap-5">
+      <div className="grid grid-cols-[minmax(0,1fr)_420px] gap-5">
         <section className="space-y-5">
           <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-5">
             <Card>
@@ -516,8 +542,6 @@ export function TableEditPage() {
             <CardContent>
               <DataTable
                 table={fieldsTable as any}
-                selectedRowId={selectedField?.id}
-                getRowId={(row) => row.id}
                 onRowClick={(row) => setActiveFieldId(row.id)}
               />
             </CardContent>
@@ -530,6 +554,7 @@ export function TableEditPage() {
               <FieldInspector
                 key={selectedField.id}
                 field={selectedField}
+                tableNames={tableNames}
                 onChange={patchSelectedField}
                 onClose={() => setActiveFieldId(null)}
               />
@@ -578,10 +603,12 @@ function FormLabel({ children }: { children: ReactNode }) {
 
 function FieldInspector({
   field,
+  tableNames,
   onChange,
   onClose,
 }: {
   field: AdminFieldMeta;
+  tableNames: string[];
   onChange: (payload: UpdateAdminFieldInput) => void;
   onClose: () => void;
 }) {
@@ -617,10 +644,20 @@ function FieldInspector({
 
       <div className="space-y-2">
         <FormLabel>Название поля *</FormLabel>
-
         <Input
           value={field.label}
           onChange={(event) => onChange({ label: event.target.value })}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <FormLabel>Группа</FormLabel>
+        <Input
+          placeholder="Например: Основное"
+          value={field.group ?? ""}
+          onChange={(event) =>
+            onChange({ group: emptyToNull(event.target.value) })
+          }
         />
       </div>
 
@@ -636,16 +673,17 @@ function FieldInspector({
               inputType,
               relation:
                 inputType === "select" || inputType === "multiselect"
-                  ? (field.relation ?? {
-                      targetTable: "users",
-                      relationType: "many-to-one",
-                      displayField: "full_name",
-                    })
+                  ? field.relation ?? {
+                      targetTable: tableNames[0] ?? "users",
+                      targetKey: "id",
+                      displayField: "name",
+                      additionalText: null,
+                    }
                   : null,
             });
           }}
         >
-          <SelectTrigger className="w-full max-w-72">
+          <SelectTrigger className="w-full max-w-80">
             <SelectValue />
           </SelectTrigger>
 
@@ -661,7 +699,6 @@ function FieldInspector({
 
       <div className="space-y-2">
         <FormLabel>Плейсхолдер</FormLabel>
-
         <Input
           value={field.placeholder ?? ""}
           onChange={(event) => onChange({ placeholder: event.target.value })}
@@ -670,7 +707,6 @@ function FieldInspector({
 
       <div className="space-y-2">
         <FormLabel>Подсказка</FormLabel>
-
         <Textarea
           value={field.helpText ?? ""}
           onChange={(event) => onChange({ helpText: event.target.value })}
@@ -684,8 +720,9 @@ function FieldInspector({
           [
             ["required", "Обязательное поле"],
             ["editable", "Редактируемое поле"],
-            ["showInList", "Показывать в таблице"],
-            ["showInForm", "Показывать в форме"],
+            ["sortable", "Разрешить сортировку"],
+            ["filterable", "Разрешить фильтрацию"],
+            ["visible", "Показывать в форме"],
           ] satisfies Array<[AdminFieldFlagKey, string]>
         ).map(([key, label]) => (
           <div className="flex items-center justify-between" key={key}>
@@ -699,6 +736,49 @@ function FieldInspector({
         ))}
       </div>
 
+      <Separator />
+
+      <JsonEditorField
+        label="Значение по умолчанию (JSON)"
+        value={field.defaultValue ?? null}
+        fallbackValue={null}
+        onApply={(value) => onChange({ defaultValue: value })}
+      />
+
+      {(field.inputType === "select" || field.inputType === "multiselect") && (
+        <>
+          <Separator />
+
+          <JsonEditorField<FieldOption[]>
+            label="Опции (JSON)"
+            value={field.options ?? []}
+            fallbackValue={[]}
+            description='Формат: [{"label":"Новый","value":"new"}]'
+            onApply={(value) => onChange({ options: Array.isArray(value) ? value : [] })}
+          />
+        </>
+      )}
+
+      <Separator />
+
+      <JsonEditorField<FieldValidationMeta>
+        label="Validation (JSON)"
+        value={field.validation ?? DEFAULT_FIELD_VALIDATION}
+        fallbackValue={DEFAULT_FIELD_VALIDATION}
+        description='По умолчанию ограничений нет: {"min":null,"max":null,"minLength":null,"maxLength":null,"pattern":null}'
+        onApply={(value) =>
+          onChange({
+            validation:
+              typeof value === "object" && value !== null
+                ? ({
+                    ...DEFAULT_FIELD_VALIDATION,
+                    ...value,
+                  } as FieldValidationMeta)
+                : DEFAULT_FIELD_VALIDATION,
+          })
+        }
+      />
+
       {(field.inputType === "select" || field.inputType === "multiselect") && (
         <>
           <Separator />
@@ -706,67 +786,88 @@ function FieldInspector({
           <div className="space-y-3">
             <h3 className="text-sm font-semibold">Настройки связи</h3>
 
-            <RelationSelect
-              label="Целевая таблица *"
-              value={field.relation?.targetTable ?? "users"}
-              options={Object.keys(ADMIN_TABLE_LABELS)}
-              getOptionLabel={getAdminTableLabel}
-              onValueChange={(value) =>
-                onChange({
-                  relation: {
-                    targetTable: value,
-                    relationType: field.relation?.relationType ?? "many-to-one",
-                    displayField: field.relation?.displayField ?? "full_name",
-                  },
-                })
-              }
-            />
-
             <div className="space-y-2">
-              <FormLabel>Тип связи</FormLabel>
-
+              <FormLabel>Целевая таблица *</FormLabel>
               <Select
-                value={field.relation?.relationType ?? "many-to-one"}
+                value={field.relation?.targetTable ?? (tableNames[0] ?? "users")}
                 onValueChange={(value) =>
                   onChange({
                     relation: {
-                      targetTable: field.relation?.targetTable ?? "users",
-                      relationType: value as RelationType,
-                      displayField: field.relation?.displayField ?? "full_name",
+                      targetTable: value,
+                      targetKey: field.relation?.targetKey ?? "id",
+                      displayField: field.relation?.displayField ?? "name",
+                      additionalText: field.relation?.additionalText ?? null,
                     },
                   })
                 }
               >
-                <SelectTrigger className="w-full max-w-72">
+                <SelectTrigger className="w-full max-w-80">
                   <SelectValue />
                 </SelectTrigger>
 
                 <SelectContent>
-                  <SelectItem value="many-to-one">
-                    Многие к одному (N:1)
-                  </SelectItem>
-                  <SelectItem value="one-to-one">
-                    Один к одному (1:1)
-                  </SelectItem>
+                  {tableNames.map((tableName) => (
+                    <SelectItem value={tableName} key={tableName}>
+                      {tableName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <RelationSelect
-              label="Отображаемое поле *"
-              value={field.relation?.displayField ?? "full_name"}
-              options={Object.keys(ADMIN_DISPLAY_FIELD_LABELS)}
-              getOptionLabel={getAdminDisplayFieldLabel}
-              onValueChange={(value) =>
-                onChange({
-                  relation: {
-                    targetTable: field.relation?.targetTable ?? "users",
-                    relationType: field.relation?.relationType ?? "many-to-one",
-                    displayField: value,
-                  },
-                })
-              }
-            />
+            <div className="space-y-2">
+              <FormLabel>Ключ связи *</FormLabel>
+              <Input
+                placeholder="Например: id"
+                value={field.relation?.targetKey ?? "id"}
+                onChange={(event) =>
+                  onChange({
+                    relation: {
+                      targetTable: field.relation?.targetTable ?? (tableNames[0] ?? "users"),
+                      targetKey: event.target.value || "id",
+                      displayField: field.relation?.displayField ?? "name",
+                      additionalText: field.relation?.additionalText ?? null,
+                    },
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <FormLabel>Поле отображения *</FormLabel>
+              <Input
+                placeholder="Например: name"
+                value={field.relation?.displayField ?? "name"}
+                onChange={(event) =>
+                  onChange({
+                    relation: {
+                      targetTable: field.relation?.targetTable ?? (tableNames[0] ?? "users"),
+                      targetKey: field.relation?.targetKey ?? "id",
+                      displayField: event.target.value || "name",
+                      additionalText: field.relation?.additionalText ?? null,
+                    },
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <FormLabel>Дополнительный текст</FormLabel>
+              <Input
+                placeholder="Например: email"
+                value={field.relation?.additionalText ?? ""}
+                onChange={(event) =>
+                  onChange({
+                    relation: {
+                      targetTable: field.relation?.targetTable ?? (tableNames[0] ?? "users"),
+                      targetKey: field.relation?.targetKey ?? "id",
+                      displayField: field.relation?.displayField ?? "name",
+                      additionalText: emptyToNull(event.target.value),
+                    },
+                  })
+                }
+              />
+            </div>
           </div>
         </>
       )}
@@ -774,36 +875,73 @@ function FieldInspector({
   );
 }
 
-function RelationSelect({
+function JsonEditorField<T>({
   label,
   value,
-  options,
-  getOptionLabel,
-  onValueChange,
+  fallbackValue,
+  description,
+  onApply,
 }: {
   label: string;
-  value: string;
-  options: string[];
-  getOptionLabel: (value: string) => string;
-  onValueChange: (value: string) => void;
+  value: T;
+  fallbackValue: T;
+  description?: string;
+  onApply: (value: T) => void;
 }) {
+  const [text, setText] = useState(() => toPrettyJson(value ?? fallbackValue));
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setText(toPrettyJson(value ?? fallbackValue));
+    setError(null);
+  }, [value, fallbackValue]);
+
+  const apply = () => {
+    try {
+      const parsed = JSON.parse(text) as T;
+      onApply(parsed);
+      setError(null);
+    } catch {
+      setError("Некорректный JSON");
+    }
+  };
+
+  const reset = () => {
+    const next = toPrettyJson(fallbackValue);
+    setText(next);
+    setError(null);
+    onApply(fallbackValue);
+  };
+
   return (
     <div className="space-y-2">
       <FormLabel>{label}</FormLabel>
-
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="w-full max-w-72">
-          <SelectValue />
-        </SelectTrigger>
-
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem value={option} key={option}>
-              {getOptionLabel(option)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {description ? (
+        <p className="text-xs text-muted-foreground">{description}</p>
+      ) : null}
+      <Textarea
+        className="min-h-28 font-mono text-xs"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+      />
+      <div className="flex items-center gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={apply}>
+          Применить JSON
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={reset}>
+          Сбросить
+        </Button>
+        {error ? <span className="text-xs text-destructive">{error}</span> : null}
+      </div>
     </div>
   );
+}
+
+function toPrettyJson(value: unknown) {
+  return JSON.stringify(value, null, 2);
+}
+
+function emptyToNull(value: string) {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }

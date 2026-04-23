@@ -8,12 +8,6 @@ import type { AdminTableMeta } from "@ommr/shared";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
@@ -50,9 +44,8 @@ export function TableListPage() {
     clearSelection,
   } = useTableSelection();
 
-  const { mutate: deleteMany, isLoading: isDeleting } =
-    useDeleteMany<AdminTableMeta>();
-
+  const { mutate: deleteMany, mutation } = useDeleteMany<AdminTableMeta>();
+  const isLoading = mutation.isPending;
   const columns = useMemo<ColumnDef<AdminTableMeta>[]>(
     () => [
       {
@@ -119,7 +112,7 @@ export function TableListPage() {
                 <strong className="block truncate">
                   {row.original.label || row.original.name}
                 </strong>
-                
+
                 <span className="block truncate text-xs text-muted-foreground">
                   {row.original.name}
                 </span>
@@ -290,7 +283,7 @@ export function TableListPage() {
 
           <DeleteItemsToolbar
             selectedCount={selectedCount}
-            deleteDisabled={!hasSelectedRows || isDeleting}
+            deleteDisabled={!hasSelectedRows || isLoading}
             onDeleteClick={() => setIsDeleteDialogOpen(true)}
           />
         </div>
@@ -394,8 +387,8 @@ export function TableListPage() {
         title="Удалить выбранные таблицы?"
         description={
           <>
-            Вы собираетесь удалить{" "}
-            <span className="font-medium text-foreground">{selectedCount}</span>{" "}
+            Вы собираетесь удалить
+            <span className="font-medium text-foreground">{selectedCount}</span>
             {pluralizeRu(selectedCount, ["таблицу", "таблицы", "таблиц"])}. Это
             действие нельзя будет отменить.
           </>
@@ -405,7 +398,7 @@ export function TableListPage() {
           title: row.original.label || row.original.name,
           description: row.original.name,
         }))}
-        isPending={isDeleting}
+        isPending={isLoading}
         onConfirm={handleDeleteSelected}
       />
     </div>

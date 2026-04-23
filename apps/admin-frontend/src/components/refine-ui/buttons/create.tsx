@@ -34,7 +34,6 @@ export const CreateButton = React.forwardRef<
     accessControl,
     meta,
   });
-
   const isDisabled = disabled || rest.disabled;
   const isHidden = hidden || rest.hidden;
 
