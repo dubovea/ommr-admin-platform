@@ -51,8 +51,6 @@ export type RelationGraphRelation = {
 };
 
 export type RelationGraphResponse = {
-  data: {
-    tables: RelationGraphTable[];
-    relations: RelationGraphRelation[];
-  };
+  tables: RelationGraphTable[];
+  relations: RelationGraphRelation[];
 };

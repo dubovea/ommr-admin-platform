@@ -1,90 +1,101 @@
-import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { KeyRound, Link2, Table2 } from "lucide-react";
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Database, KeyRound, Link2 } from "lucide-react";
 
-import type { RelationGraphRelation, RelationGraphTable } from "@/types/relations.typesА";
+import {
+  FIELD_ROW_HEIGHT,
+  getGraphFields,
+  getHiddenFieldsCount,
+  getSourceHandle,
+  getTableSourceFields,
+  getTableTargetFields,
+  getTargetHandle,
+} from "@/lib/relation-graph-model";
+import type {
+  RelationGraphRelation,
+  RelationGraphTable,
+} from "@/types/relations.types";
 
 export type TableNodeData = {
   table: RelationGraphTable;
   relations: RelationGraphRelation[];
-  accentClassName: string;
+  isDimmed: boolean;
+  isHighlighted: boolean;
 };
 
-function getSourceHandle(tableName: string, fieldName: string) {
-  return `source:${tableName}:${fieldName}`;
-}
+export type TableNodeType = Node<TableNodeData, "tableNode">;
 
-function getTargetHandle(tableName: string, fieldName: string) {
-  return `target:${tableName}:${fieldName}`;
-}
+export function TableNode({ data }: NodeProps<TableNodeType>) {
+  const graphFields = getGraphFields(data.table, data.relations);
+  const hiddenCount = getHiddenFieldsCount(data.table, data.relations);
 
-function getFieldTypeLabel(inputType: string) {
-  return inputType;
-}
-
-export function TableNode({ data }: NodeProps) {
-  const nodeData = data as TableNodeData;
-
-  const sourceFieldNames = new Set(
-    nodeData.relations
-      .filter((relation) => relation.sourceTable.name === nodeData.table.name)
-      .map((relation) => relation.sourceField.name),
+  const sourceFieldNames = getTableSourceFields(
+    data.table.name,
+    data.relations,
   );
 
-  const targetFieldNames = new Set(
-    nodeData.relations
-      .filter((relation) => relation.targetTable.name === nodeData.table.name)
-      .map((relation) => relation.targetField.name),
+  const targetFieldNames = getTableTargetFields(
+    data.table.name,
+    data.relations,
   );
 
   return (
-    <div className="w-[320px] overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm">
-      <div className={`border-b px-4 py-3 ${nodeData.accentClassName}`}>
-        <div className="flex items-center gap-3">
-          <div className="grid size-9 place-items-center rounded-xl bg-background/80 shadow-sm">
-            <Table2 className="size-4" />
+    <div
+      className={[
+        "w-[340px] overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-150",
+        data.isHighlighted ? "ring-2 ring-blue-400/70" : "",
+        data.isDimmed ? "opacity-15" : "opacity-100",
+      ].join(" ")}
+    >
+      <div className="flex h-[58px] items-center gap-3 border-b bg-muted/40 px-4">
+        <div className="grid size-8 place-items-center rounded-lg bg-background shadow-sm">
+          <Database className="size-4 text-muted-foreground" />
+        </div>
+
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold">
+            {data.table.label || data.table.name}
           </div>
 
-          <div className="min-w-0">
-            <div className="truncate text-base font-semibold">
-              {nodeData.table.label || nodeData.table.name}
-            </div>
-
-            <div className="truncate text-xs text-muted-foreground">
-              {nodeData.table.name}
-            </div>
+          <div className="truncate text-xs text-muted-foreground">
+            {data.table.name}
           </div>
         </div>
       </div>
 
-      <div className="max-h-[320px] space-y-1 overflow-y-auto overflow-x-hidden p-3">
-        {nodeData.table.fields.map((field) => {
+      <div className="space-y-1 px-3 py-3">
+        {graphFields.map((field) => {
           const isSourceField = sourceFieldNames.has(field.name);
           const isTargetField = targetFieldNames.has(field.name);
 
           return (
             <div
               key={field.id}
-              className={
-                isSourceField
-                  ? "relative grid grid-cols-[24px_minmax(0,1fr)_78px] items-center gap-2 rounded-lg bg-blue-50 px-2 py-2 text-sm"
-                  : isTargetField
-                    ? "relative grid grid-cols-[24px_minmax(0,1fr)_78px] items-center gap-2 rounded-lg bg-emerald-50 px-2 py-2 text-sm"
-                    : "relative grid grid-cols-[24px_minmax(0,1fr)_78px] items-center gap-2 rounded-lg px-2 py-2 text-sm"
-              }
+              className={[
+                "relative grid items-center gap-2 rounded-lg px-2 text-sm",
+                "grid-cols-[22px_minmax(0,1fr)_82px]",
+                isSourceField ? "bg-blue-50" : "",
+                isTargetField ? "bg-emerald-50" : "",
+              ].join(" ")}
+              style={{
+                height: FIELD_ROW_HEIGHT,
+              }}
             >
               <Handle
-                id={getTargetHandle(nodeData.table.name, field.name)}
+                id={getTargetHandle(data.table.name, field.name)}
                 type="target"
                 position={Position.Left}
-                className={
+                className={[
+                  "!left-[-8px] !border-2 !border-background",
                   isTargetField
-                    ? "!left-[-7px] !size-3 !border-2 !border-background !bg-emerald-500"
-                    : "!left-[-7px] !size-2 !border-2 !border-background !bg-muted"
-                }
+                    ? "!size-3 !bg-emerald-500"
+                    : "!size-2 !bg-muted-foreground/25",
+                ].join(" ")}
               />
 
               <div className="grid place-items-center">
-                {field.name === "id" || isTargetField ? (
+                {field.name === "id" ||
+                field.name === "code" ||
+                isTargetField ? (
                   <KeyRound className="size-4 text-amber-500" />
                 ) : isSourceField ? (
                   <Link2 className="size-4 text-blue-600" />
@@ -96,22 +107,29 @@ export function TableNode({ data }: NodeProps) {
               <div className="truncate font-medium">{field.name}</div>
 
               <div className="truncate text-right text-xs text-muted-foreground">
-                {getFieldTypeLabel(field.inputType)}
+                {field.inputType}
               </div>
 
               <Handle
-                id={getSourceHandle(nodeData.table.name, field.name)}
+                id={getSourceHandle(data.table.name, field.name)}
                 type="source"
                 position={Position.Right}
-                className={
+                className={[
+                  "!right-[-8px] !border-2 !border-background",
                   isSourceField
-                    ? "!right-[-7px] !size-3 !border-2 !border-background !bg-blue-500"
-                    : "!right-[-7px] !size-2 !border-2 !border-background !bg-muted"
-                }
+                    ? "!size-3 !bg-blue-500"
+                    : "!size-2 !bg-muted-foreground/25",
+                ].join(" ")}
               />
             </div>
           );
         })}
+
+        {hiddenCount > 0 ? (
+          <div className="px-2 pt-1 text-xs text-muted-foreground">
+            + ещё {hiddenCount} полей скрыто
+          </div>
+        ) : null}
       </div>
     </div>
   );

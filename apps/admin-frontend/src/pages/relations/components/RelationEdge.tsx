@@ -1,19 +1,63 @@
+// apps/admin-frontend/src/pages/relations/components/RelationEdge.tsx
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  getSmoothStepPath,
+  type Edge,
   type EdgeProps,
 } from "@xyflow/react";
 import { Link2 } from "lucide-react";
 
 import type { RelationGraphRelation } from "@/types/relations.types";
 
+export type RelationEdgePoint = {
+  x: number;
+  y: number;
+};
+
 export type RelationEdgeData = {
   relation: RelationGraphRelation;
   color: string;
-  textColorClassName: string;
-  bgClassName: string;
+  points: RelationEdgePoint[];
+  isDimmed: boolean;
+  isHighlighted: boolean;
+  onFocusRelation?: (relationId: string) => void;
+  onBlurRelation?: () => void;
 };
+
+export type RelationEdgeType = Edge<RelationEdgeData, "relationEdge">;
+
+function getPathFromPoints(points: RelationEdgePoint[]) {
+  if (points.length === 0) {
+    return "";
+  }
+
+  const [firstPoint, ...rest] = points;
+
+  return [
+    `M ${firstPoint.x},${firstPoint.y}`,
+    ...rest.map((point) => `L ${point.x},${point.y}`),
+  ].join(" ");
+}
+
+function getLabelPoint(points: RelationEdgePoint[]) {
+  if (points.length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  const middleIndex = Math.floor(points.length / 2);
+
+  if (points.length === 1) {
+    return points[0];
+  }
+
+  const current = points[middleIndex];
+  const previous = points[middleIndex - 1] ?? current;
+
+  return {
+    x: (previous.x + current.x) / 2,
+    y: (previous.y + current.y) / 2,
+  };
+}
 
 export function RelationEdge({
   id,
@@ -21,74 +65,85 @@ export function RelationEdge({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   markerEnd,
   data,
-}: EdgeProps) {
-  const edgeData = data as RelationEdgeData;
+}: EdgeProps<RelationEdgeType>) {
+  const points =
+    data?.points && data.points.length >= 2
+      ? data.points
+      : [
+          { x: sourceX, y: sourceY },
+          { x: targetX, y: targetY },
+        ];
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 24,
-  });
+  const path = getPathFromPoints(points);
+  const labelPoint = getLabelPoint(points);
 
-  const additionalText = edgeData.relation.relation.additionalText;
+  const opacity = data?.isDimmed ? 0.08 : 1;
+  const labelOpacity = data?.isDimmed ? 0.04 : data?.isHighlighted ? 1 : 0.72;
 
   return (
     <>
       <BaseEdge
         id={id}
-        path={edgePath}
+        path={path}
         markerEnd={markerEnd}
         style={{
-          stroke: edgeData.color,
-          strokeWidth: 2.5,
-          filter: "drop-shadow(0 3px 8px rgba(15, 23, 42, 0.14))",
+          stroke: data?.color ?? "#64748b",
+          strokeWidth: data?.isHighlighted ? 3.4 : 2,
+          opacity,
+          transition: "opacity 160ms ease, stroke-width 160ms ease",
+          filter: data?.isHighlighted
+            ? "drop-shadow(0 4px 10px rgba(15, 23, 42, 0.22))"
+            : "none",
         }}
+      />
+
+      <path
+        d={path}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={22}
+        className="cursor-pointer"
+        onMouseEnter={() => data?.onFocusRelation?.(id)}
+        onMouseLeave={() => data?.onBlurRelation?.()}
       />
 
       <EdgeLabelRenderer>
         <div
-          className="nodrag nopan pointer-events-auto absolute"
+          className="nodrag nopan absolute rounded-lg border bg-background/95 px-2.5 py-1.5 text-[11px] shadow-sm backdrop-blur transition-opacity"
           style={{
-            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            transform: `translate(-50%, -50%) translate(${labelPoint.x}px, ${labelPoint.y}px)`,
+            pointerEvents: "all",
+            borderColor: data?.color ?? "#cbd5e1",
+            color: data?.color ?? "#334155",
+            opacity: labelOpacity,
+            zIndex: data?.isHighlighted ? 1001 : 20,
           }}
+          onMouseEnter={() => data?.onFocusRelation?.(id)}
+          onMouseLeave={() => data?.onBlurRelation?.()}
         >
-          <div
-            className={`rounded-xl border bg-background/95 px-3 py-2 text-[11px] shadow-md backdrop-blur ${edgeData.bgClassName}`}
-          >
-            <div
-              className={`flex items-center gap-1.5 whitespace-nowrap font-semibold ${edgeData.textColorClassName}`}
-            >
-              <Link2 className="size-3" />
-              {edgeData.relation.sourceField.name} →{" "}
-              {edgeData.relation.targetTable.name}.
-              {edgeData.relation.relation.targetKey}
-            </div>
+          <div className="flex items-center gap-1.5 whitespace-nowrap font-semibold">
+            <Link2 className="size-3" />
+            {data?.relation.sourceField.name} →{" "}
+            {data?.relation.targetTable.name}.
+            {data?.relation.relation.targetKey}
+          </div>
 
-            <div className="mt-0.5 whitespace-nowrap text-muted-foreground">
-              display:{" "}
-              <span className={`font-semibold ${edgeData.textColorClassName}`}>
-                {edgeData.relation.relation.displayField}
-              </span>
-              {additionalText ? (
-                <>
-                  {" "}
-                  · add:{" "}
-                  <span
-                    className={`font-semibold ${edgeData.textColorClassName}`}
-                  >
-                    {additionalText}
-                  </span>
-                </>
-              ) : null}
-            </div>
+          <div className="mt-0.5 whitespace-nowrap text-[10px] text-muted-foreground">
+            display:{" "}
+            <span style={{ color: data?.color }}>
+              {data?.relation.relation.displayField}
+            </span>
+            {data?.relation.relation.additionalText ? (
+              <>
+                {" "}
+                · add:{" "}
+                <span style={{ color: data?.color }}>
+                  {data.relation.relation.additionalText}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
       </EdgeLabelRenderer>
