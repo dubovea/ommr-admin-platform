@@ -1,6 +1,10 @@
 import { Controller } from "react-hook-form";
 import { useParams } from "react-router";
-import type { AdminTableActionKey } from "@ommr/shared";
+import type {
+  AdminFieldMeta,
+  AdminTableActionKey,
+  CreateAdminFieldInput,
+} from "@ommr/shared";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +14,6 @@ import {
   EditViewHeader,
 } from "@/components/refine-ui/views/edit-view";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,11 +23,59 @@ import { LoadingBanner } from "@/components/LoadingBanner";
 import { pluralizeRu } from "@/lib/ru-plural";
 import { FieldInspector } from "@/components/FieldInspector";
 import { useTableEditPage } from "@/hooks/use-table-edit-page";
+import { useCreate } from "@refinedev/core";
 
 export function TableEditPage() {
   const { id } = useParams<{ id: string }>();
 
   const vm = useTableEditPage(id);
+
+  const { mutate: createField, mutation: mutationField } =
+    useCreate<AdminFieldMeta>();
+
+  const isCreatingField = mutationField.isPending;
+
+  const createFieldAsync = (values: CreateAdminFieldInput) =>
+    new Promise<AdminFieldMeta>((resolve, reject) => {
+      createField(
+        { resource: "fields", values },
+        {
+          onSuccess: ({ data }) => resolve(data),
+          onError: reject,
+        },
+      );
+    });
+
+  const handleCreateField = async () => {
+    if (!id || isCreatingField) {
+      return;
+    }
+
+    const fieldIndex = vm.fieldRows.length + 1;
+
+    const createdField = await createFieldAsync({
+      tableId: id,
+      name: `new_field_${fieldIndex}`,
+      label: `Новое поле ${fieldIndex}`,
+      dbType: "",
+      inputType: "text",
+      required: false,
+      editable: false,
+      sortable: false,
+      filterable: false,
+      visible: false,
+      group: null,
+      defaultValue: null,
+      options: null,
+      validation: null,
+      placeholder: null,
+      helpText: null,
+      relation: null,
+      sortOrder: fieldIndex,
+    });
+
+    vm.setActiveFieldId(createdField.id);
+  };
 
   const {
     register,
@@ -142,7 +193,13 @@ export function TableEditPage() {
                       }
                     />
 
-                    <Button variant="outline">+ Добавить поле</Button>
+                    <Button
+                      variant="outline"
+                      disabled={isCreatingField}
+                      onClick={handleCreateField}
+                    >
+                      + Добавить поле
+                    </Button>
 
                     <Button variant="outline">Импортировать поля</Button>
                   </div>
@@ -166,6 +223,7 @@ export function TableEditPage() {
                     field={vm.selectedField}
                     onChange={vm.patchSelectedField}
                     onClose={() => vm.setActiveFieldId(null)}
+                    isUpdating={vm.isFieldUpdating}
                   />
                 ) : (
                   <div className="py-10 text-center text-muted-foreground">

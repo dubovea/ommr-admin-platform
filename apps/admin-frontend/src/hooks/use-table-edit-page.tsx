@@ -73,7 +73,11 @@ export function useTableEditPage(tableId?: string) {
     },
   });
 
-  const { mutate: updateField } = useUpdate<AdminFieldMeta>();
+  const { mutate: updateField, mutation: updateFieldMutation } =
+    useUpdate<AdminFieldMeta>();
+
+  const isFieldUpdating = updateFieldMutation.isPending;
+
   const { mutate: deleteFields, mutation } = useDeleteMany<AdminFieldMeta>();
   const isDeletePending = mutation?.isPending;
 
@@ -278,30 +282,36 @@ export function useTableEditPage(tableId?: string) {
 
   function patchSelectedField(payload: UpdateAdminFieldInput) {
     if (!selectedField) {
-      return;
+      return Promise.resolve();
     }
-
-    updateField(
-      {
-        resource: "fields",
-        id: selectedField.id,
-        values: payload,
-        mutationMode: "optimistic",
-      },
-      {
-        onSuccess: () => {
-          invalidate({
-            resource: "fields",
-            invalidates: ["list"],
-          });
-
-          invalidate({
-            resource: "tables",
-            invalidates: ["list", "detail"],
-          });
+    return new Promise<void>((resolve, reject) => {
+      updateField(
+        {
+          resource: "fields",
+          id: selectedField.id,
+          values: payload,
+          mutationMode: "optimistic",
         },
-      },
-    );
+        {
+          onSuccess: () => {
+            invalidate({
+              resource: "fields",
+              invalidates: ["list"],
+            });
+
+            invalidate({
+              resource: "tables",
+              invalidates: ["list", "detail"],
+            });
+
+            resolve();
+          },
+          onError: (error) => {
+            reject(error);
+          },
+        },
+      );
+    });
   }
 
   const confirmDeleteFields = useCallback(() => {
@@ -379,7 +389,7 @@ export function useTableEditPage(tableId?: string) {
     fieldsToDelete,
     openDeleteFieldsDialog,
     confirmDeleteFields,
-
     patchSelectedField,
+    isFieldUpdating,
   };
 }

@@ -2,9 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useDeleteMany, useNavigation } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Edit, Eye, MoreHorizontal, Pencil, Search } from "lucide-react";
-import { toast } from "sonner";
-import type { AdminTableMeta } from "@ommr/shared";
+import { Edit, Pencil, Search } from "lucide-react";
+import {
+  ADMIN_TABLE_SOURCE_LABELS,
+  ADMIN_TABLE_SOURCES,
+  ADMIN_TABLE_STATUS_LABELS,
+  ADMIN_TABLE_STATUSES,
+  type AdminTableMeta,
+  type AdminTableSource,
+  type AdminTableStatus,
+} from "@ommr/shared";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +36,78 @@ import {
 import { DeleteItemsToolbar } from "@/components/DeleteItemsToolbar";
 import { pluralizeRu } from "@/lib/ru-plural";
 import { DeleteItemsDialog } from "@/components/DeleteItemsDialog";
-import { DataTableFilterCombobox, DataTableFilterDropdownText } from "@/components/refine-ui/data-table/data-table-filter";
+import {
+  DataTableFilterCombobox,
+  DataTableFilterDropdownText,
+} from "@/components/refine-ui/data-table/data-table-filter";
+
+const SOURCE_FILTER_OPTIONS = ADMIN_TABLE_SOURCES.map((source) => ({
+  label: ADMIN_TABLE_SOURCE_LABELS[source],
+  value: source,
+}));
+
+const STATUS_FILTER_OPTIONS = ADMIN_TABLE_STATUSES.map((status) => ({
+  label: ADMIN_TABLE_STATUS_LABELS[status],
+  value: status,
+}));
+
+function getSourceBadgeClassName(source: AdminTableSource) {
+  switch (source) {
+    case "pydantic":
+      return "bg-violet-100 text-violet-700";
+    case "manual":
+      return "bg-emerald-100 text-emerald-700";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}
+
+function getStatusDotClassName(status: AdminTableStatus) {
+  switch (status) {
+    case "draft":
+      return "bg-slate-100 text-slate-700";
+    case "needs_setup":
+      return "bg-amber-100 text-amber-700";
+    case "partial":
+      return "bg-blue-100 text-blue-700";
+    case "ready":
+      return "bg-emerald-100 text-emerald-700";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}
+
+function SourceBadge({ source }: { source: AdminTableSource }) {
+  const label = ADMIN_TABLE_SOURCE_LABELS[source];
+
+  return (
+    <div className="flex items-center gap-2 text-muted-foreground">
+      <span
+        className={`grid size-5 place-items-center rounded text-xs font-bold ${getSourceBadgeClassName(
+          source,
+        )}`}
+      >
+        {source.charAt(0).toUpperCase()}
+      </span>
+
+      {label}
+    </div>
+  );
+}
+
+function StatusInlineBadge({ status }: { status: AdminTableStatus }) {
+  return (
+    <div className="flex items-center gap-2 text-muted-foreground">
+      <span
+        className={`rounded px-2 py-0.5 text-xs font-medium ${getStatusDotClassName(
+          status,
+        )}`}
+      >
+        {ADMIN_TABLE_STATUS_LABELS[status]}
+      </span>
+    </div>
+  );
+}
 
 export function TableListPage() {
   const { edit } = useNavigation();
@@ -47,17 +125,6 @@ export function TableListPage() {
 
   const { mutate: deleteMany, mutation } = useDeleteMany<AdminTableMeta>();
   const isLoading = mutation.isPending;
-  const SOURCE_OPTIONS = [
-    { label: "Pydantic", value: "pydantic" },
-    { label: "Manual", value: "manual" },
-  ] as const;
-
-  const STATUS_OPTIONS = [
-    { label: "Черновик", value: "draft" },
-    { label: "Нужно настроить", value: "needs_setup" },
-    { label: "Готово", value: "ready" },
-    { label: "Частично", value: "partial" },
-  ] as const;
 
   const columns = useMemo<ColumnDef<AdminTableMeta>[]>(
     () => [
@@ -126,7 +193,9 @@ export function TableListPage() {
                   event.stopPropagation();
                   setPreviewTableId(row.original.id);
                 }}
-                aria-label={`Показать таблицу ${row.original.label || row.original.name}`}
+                aria-label={`Показать таблицу ${
+                  row.original.label || row.original.name
+                }`}
               >
                 <TableIcon icon={row.original.icon} />
               </Button>
@@ -159,25 +228,11 @@ export function TableListPage() {
               column={column}
               defaultOperator="in"
               multiple
-              options={SOURCE_OPTIONS.map((item) => ({
-                label: item.label,
-                value: item.value,
-              }))}
+              options={SOURCE_FILTER_OPTIONS}
             />
           </div>
         ),
-        cell: ({ row }) => {
-          const value = row.original.source;
-
-          return (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="grid size-5 place-items-center rounded bg-emerald-100 text-xs font-bold text-emerald-700">
-                {value === "pydantic" ? "P" : "M"}
-              </span>
-              {value === "pydantic" ? "Pydantic" : "Manual"}
-            </div>
-          );
-        },
+        cell: ({ row }) => <SourceBadge source={row.original.source} />,
       },
       {
         id: "status",
@@ -194,10 +249,7 @@ export function TableListPage() {
               column={column}
               defaultOperator="in"
               multiple
-              options={STATUS_OPTIONS.map((item) => ({
-                label: item.label,
-                value: item.value,
-              }))}
+              options={STATUS_FILTER_OPTIONS}
             />
           </div>
         ),
@@ -388,11 +440,9 @@ export function TableListPage() {
                     {selectedTable.name}
                   </div>
 
-                  <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="grid size-5 place-items-center rounded bg-emerald-100 text-xs font-bold text-emerald-700">
-                      P
-                    </span>
-                    Pydantic
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                    <SourceBadge source={selectedTable.source} />
+                    <StatusInlineBadge status={selectedTable.status} />
                   </div>
                 </div>
               </div>
@@ -411,6 +461,10 @@ export function TableListPage() {
                 <MetaRow
                   label="Обязательные поля"
                   value={String(selectedTable.requiredFieldsCount ?? 0)}
+                />
+                <MetaRow
+                  label="Связи"
+                  value={String(selectedTable.relationsCount ?? 0)}
                 />
               </div>
 
@@ -464,8 +518,10 @@ export function TableListPage() {
         title="Удалить выбранные таблицы?"
         description={
           <>
-            Вы собираетесь удалить
-            <span className="font-medium text-foreground">{selectedCount}</span>
+            Вы собираетесь удалить{" "}
+            <span className="font-medium text-foreground">
+              {selectedCount}
+            </span>{" "}
             {pluralizeRu(selectedCount, ["таблицу", "таблицы", "таблиц"])}. Это
             действие нельзя будет отменить.
           </>

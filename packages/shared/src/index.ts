@@ -46,6 +46,11 @@ export const ADMIN_TABLE_SOURCES = ["pydantic", "manual"] as const;
 
 export type AdminTableSource = (typeof ADMIN_TABLE_SOURCES)[number];
 
+export const ADMIN_TABLE_SOURCE_LABELS: Record<AdminTableSource, string> = {
+  pydantic: "Pydantic",
+  manual: "Ручной",
+};
+
 export type FieldOption = {
   label: string;
   value: string;

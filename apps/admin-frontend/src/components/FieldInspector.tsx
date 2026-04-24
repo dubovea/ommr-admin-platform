@@ -39,13 +39,19 @@ export function FieldInspector({
   field,
   onChange,
   onClose,
+  isUpdating = false,
 }: {
   tablesData: AdminTableMeta[];
   field: AdminFieldMeta;
-  onChange: (payload: UpdateAdminFieldInput) => void;
+  onChange: (payload: UpdateAdminFieldInput) => void | Promise<void>;
   onClose: () => void;
+  isUpdating?: boolean;
 }) {
   const fieldLabel = field.label || field.name;
+
+  const [isRelationUpdating, setIsRelationUpdating] = useState(false);
+
+  const relationControlsDisabled = isUpdating || isRelationUpdating;
 
   const [defaultValueText, setDefaultValueText] = useState(() =>
     toPrettyJson(field.defaultValue ?? null),
@@ -82,6 +88,19 @@ export function FieldInspector({
 
   const selectedRelationFields = getRelationFields(selectedRelationTable);
 
+  async function applyRelationChange(payload: UpdateAdminFieldInput) {
+    if (relationControlsDisabled) {
+      return;
+    }
+
+    try {
+      setIsRelationUpdating(true);
+      await Promise.resolve(onChange(payload));
+    } finally {
+      setIsRelationUpdating(false);
+    }
+  }
+
   function patchRelationField(
     key: "targetKey" | "displayField" | "additionalText",
     value: string | null,
@@ -96,7 +115,7 @@ export function FieldInspector({
       return;
     }
 
-    onChange(patch);
+    void applyRelationChange(patch);
   }
 
   return (
@@ -127,6 +146,12 @@ export function FieldInspector({
       <Separator />
 
       <LabeledInput
+        label="Техническое имя поля *"
+        value={field.name}
+        onChange={(value) => onChange({ name: value })}
+      />
+
+      <LabeledInput
         label="Название поля *"
         value={field.label}
         onChange={(value) => onChange({ label: value })}
@@ -137,6 +162,7 @@ export function FieldInspector({
 
         <Select
           value={field.inputType}
+          disabled={isUpdating}
           onValueChange={(value) => {
             onChange({
               inputType: value as AdminFieldMeta["inputType"],
@@ -176,8 +202,19 @@ export function FieldInspector({
 
                 <Select
                   value={field.relation?.targetTableId ?? ""}
+                  disabled={relationControlsDisabled}
                   onValueChange={(targetTableId) => {
-                    onChange(createTargetTableRelationPatch(targetTableId));
+                    const targetTable = relationTargetTables.find(
+                      (table) => table.id === targetTableId,
+                    );
+
+                    if (!targetTable) {
+                      return;
+                    }
+
+                    void applyRelationChange(
+                      createTargetTableRelationPatch(targetTable),
+                    );
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -198,6 +235,7 @@ export function FieldInspector({
                 <Select
                   value={field.relation?.targetKey ?? ""}
                   disabled={
+                    relationControlsDisabled ||
                     !field.relation?.targetTableId ||
                     selectedRelationFields.length === 0
                   }
@@ -223,6 +261,7 @@ export function FieldInspector({
                 <Select
                   value={field.relation?.displayField ?? ""}
                   disabled={
+                    relationControlsDisabled ||
                     !field.relation?.targetTableId ||
                     selectedRelationFields.length === 0
                   }
@@ -248,6 +287,7 @@ export function FieldInspector({
                 <Select
                   value={field.relation?.additionalText ?? "__none__"}
                   disabled={
+                    relationControlsDisabled ||
                     !field.relation?.targetTableId ||
                     selectedRelationFields.length === 0
                   }
@@ -272,6 +312,12 @@ export function FieldInspector({
                     ))}
                   </SelectContent>
                 </Select>
+
+                {relationControlsDisabled ? (
+                  <div className="text-xs text-muted-foreground">
+                    Сохраняем настройки связи...
+                  </div>
+                ) : null}
               </>
             )}
           </div>
@@ -292,6 +338,7 @@ export function FieldInspector({
             <span className="text-sm">{label}</span>
             <Switch
               checked={field[key]}
+              disabled={isUpdating}
               onCheckedChange={(checked) => onChange({ [key]: checked })}
             />
           </div>

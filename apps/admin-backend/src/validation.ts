@@ -129,6 +129,7 @@ export const createFieldSchema = z.object({
 export type CreateFieldDto = CreateAdminFieldInput;
 
 export const updateFieldSchema = z.object({
+  name: z.string().min(1).optional(),
   label: z.string().min(1).optional(),
   dbType: z.string().nullable().optional(),
   inputType: fieldInputTypeSchema.optional(),

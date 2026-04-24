@@ -5,10 +5,7 @@ import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
 import { createFieldSchema, updateFieldSchema } from "../../validation.js";
-import {
-  getRequiredStringForEq,
-  parseIdsQuery,
-} from "../../lib/utils.js";
+import { getRequiredStringForEq, parseIdsQuery } from "../../lib/utils.js";
 import {
   normalizeFieldCreatePayloadForDb,
   normalizeFieldUpdatePayloadForDb,
