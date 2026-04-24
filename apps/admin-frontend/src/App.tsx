@@ -15,6 +15,7 @@ import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import { TableCreatePage, TableEditPage, TableListPage } from "./pages/table";
 import { dataProvider } from "./providers/data";
 import { GraphNodesDB } from "./pages/schemas";
+import { RelationsGraphPage } from "./pages/relations/view";
 
 const enableDevtools = import.meta.env.VITE_REFINE_DEVTOOLS === "true";
 
@@ -34,7 +35,12 @@ function RefineApp() {
           meta: { canDelete: true, label: "Таблицы" },
         },
         { name: "fields", meta: { label: "Поля" } },
-        { name: "schemas", meta: { label: "Схема БД" } },
+        { name: "schemas", list: "/schemas", meta: { label: "Схема БД" } },
+        {
+          name: "relations",
+          list: "/relations",
+          meta: { label: "Связи" },
+        },
       ]}
       options={{
         syncWithLocation: true,
@@ -51,18 +57,26 @@ function RefineApp() {
           }
         >
           <Route index element={<NavigateToResource resource="tables" />} />
+
           <Route path="/tables">
             <Route index element={<TableListPage />} />
             <Route path="list" element={<TableListPage />} />
             <Route path="create" element={<TableCreatePage />} />
             <Route path="edit/:id" element={<TableEditPage />} />
           </Route>
+
           <Route path="/schemas">
             <Route index element={<GraphNodesDB />} />
           </Route>
+
+          <Route path="/relations">
+            <Route index element={<RelationsGraphPage />} />
+          </Route>
+
           <Route path="*" element={<ErrorComponent />} />
         </Route>
       </Routes>
+
       <Toaster />
       <RefineKbar />
       <UnsavedChangesNotifier />
