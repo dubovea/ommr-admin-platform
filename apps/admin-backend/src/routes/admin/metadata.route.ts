@@ -8,14 +8,28 @@ import { adminFields, adminTables } from "../../db/schema.js";
 
 export const metadataRouter = Router();
 
-type ExportFieldMeta = Pick<
-  AdminFieldMeta,
-  "name" | "label" | "inputType" | "relation"
->;
+type ExportFieldRelation = Omit<
+  NonNullable<AdminFieldMeta["relation"]>,
+  "targetTableId"
+> | null;
+
+type ExportFieldMeta = Pick<AdminFieldMeta, "name" | "label" | "inputType"> & {
+  relation: ExportFieldRelation;
+};
 
 type ExportTableMeta = Pick<AdminTableMeta, "name" | "label"> & {
   fields: ExportFieldMeta[];
 };
+
+function toExportRelation(relation: AdminFieldMeta["relation"]) {
+  if (!relation) {
+    return null;
+  }
+
+  const { targetTableId: _targetTableId, ...exportRelation } = relation;
+
+  return exportRelation;
+}
 
 metadataRouter.get(
   "/",
@@ -60,7 +74,7 @@ metadataRouter.get(
           name: row.fieldName ?? "",
           label: row.fieldLabel ?? "",
           inputType: row.fieldInputType!,
-          relation: row.fieldRelation ?? null,
+          relation: toExportRelation(row.fieldRelation),
         });
       }
     }

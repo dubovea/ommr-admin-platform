@@ -191,7 +191,8 @@ function getInputType(schema: JsonSchema): FieldInputType {
   if (schema.format === "date-time") return "datetime";
   if (schema.format === "date") return "date";
   if (schema.format === "time") return "time";
-  if (schema.type === "integer" || schema.type === "number") return "number";
+  if (schema.type === "integer") return "integer";
+  if (schema.type === "float") return "float";
   return "text";
 }
 

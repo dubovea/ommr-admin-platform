@@ -1,7 +1,8 @@
 export const FIELD_INPUT_TYPES = [
   "text",
   "textarea",
-  "number",
+  "integer",
+  "float",
   "checkbox",
   "switch",
   "date",
@@ -16,7 +17,8 @@ export type FieldInputType = (typeof FIELD_INPUT_TYPES)[number];
 export const FIELD_INPUT_TYPE_LABELS: Record<FieldInputType, string> = {
   text: "Текст",
   textarea: "Многострочный текст",
-  number: "Числовой ввод",
+  integer: "Целое число",
+  float: "Дробное число (с запятой)",
   checkbox: "Флажок",
   switch: "Переключатель",
   date: "Дата",
