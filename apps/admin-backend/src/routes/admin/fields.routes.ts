@@ -7,10 +7,12 @@ import { asyncHandler } from "../../lib/async-handler.js";
 import { createFieldSchema, updateFieldSchema } from "../../validation.js";
 import {
   getRequiredStringForEq,
-  normalizeFieldCreatePayload,
-  normalizeFieldUpdatePayload,
   parseIdsQuery,
 } from "../../lib/utils.js";
+import {
+  normalizeFieldCreatePayloadForDb,
+  normalizeFieldUpdatePayloadForDb,
+} from "../../lib/admin-field-relation.utils.js";
 
 export const fieldsRouter = Router();
 
@@ -70,9 +72,7 @@ fieldsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const method = "POST /fields";
-
     const payload = createFieldSchema.parse(req.body);
-    const normalizedPayload = normalizeFieldCreatePayload(payload);
 
     const tableId = getRequiredStringForEq({
       value: payload.tableId,
@@ -86,6 +86,11 @@ fieldsRouter.post(
     }
 
     const [created] = await db.transaction(async (tx) => {
+      const normalizedPayload = await normalizeFieldCreatePayloadForDb({
+        dbOrTx: tx,
+        payload,
+      });
+
       const [newField] = await tx
         .insert(adminFields)
         .values(normalizedPayload)
@@ -124,14 +129,10 @@ fieldsRouter.patch(
     }
 
     const payload = updateFieldSchema.parse(req.body);
-    const normalizedPayload = normalizeFieldUpdatePayload(payload);
 
     const [updated] = await db.transaction(async (tx) => {
       const [field] = await tx
-        .select({
-          id: adminFields.id,
-          tableId: adminFields.tableId,
-        })
+        .select()
         .from(adminFields)
         .where(eq(adminFields.id, id));
 
@@ -139,16 +140,11 @@ fieldsRouter.patch(
         return [null];
       }
 
-      const tableId = getRequiredStringForEq({
-        value: field.tableId,
-        field: "tableId",
-        method,
-        res,
+      const normalizedPayload = await normalizeFieldUpdatePayloadForDb({
+        dbOrTx: tx,
+        payload,
+        previousField: field,
       });
-
-      if (!tableId) {
-        return [null];
-      }
 
       const [updatedField] = await tx
         .update(adminFields)
@@ -164,7 +160,7 @@ fieldsRouter.patch(
         .set({
           updatedAt: new Date(),
         })
-        .where(eq(adminTables.id, tableId));
+        .where(eq(adminTables.id, field.tableId));
 
       return [updatedField];
     });
@@ -190,7 +186,6 @@ fieldsRouter.delete(
   "/",
   asyncHandler(async (req, res) => {
     const method = "DELETE /fields";
-
     const ids = parseIdsQuery(req.query.ids);
 
     if (ids.length === 0) {
@@ -276,19 +271,6 @@ fieldsRouter.delete(
         };
       }
 
-      const tableId = getRequiredStringForEq({
-        value: field.tableId,
-        field: "tableId",
-        method,
-        res,
-      });
-
-      if (!tableId) {
-        return {
-          deleted: null,
-        };
-      }
-
       const [deleted] = await tx
         .delete(adminFields)
         .where(eq(adminFields.id, id))
@@ -299,7 +281,7 @@ fieldsRouter.delete(
         .set({
           updatedAt: new Date(),
         })
-        .where(eq(adminTables.id, tableId));
+        .where(eq(adminTables.id, field.tableId));
 
       return { deleted };
     });

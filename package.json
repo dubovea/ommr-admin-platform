@@ -19,6 +19,7 @@
     "db:push": "yarn workspace @ommr/admin-backend db:push",
     "db:studio": "yarn workspace @ommr/admin-backend db:studio",
     "db:reset": "yarn workspace @ommr/admin-backend db:reset",
+    "db:reinit": "yarn workspace @ommr/admin-backend db:reset && yarn workspace @ommr/admin-backend db:push",
     "seed": "yarn workspace @ommr/admin-backend seed"
   },
   "devDependencies": {

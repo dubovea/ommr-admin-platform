@@ -14,7 +14,9 @@ export const tablesRouter = Router();
 
 tablesRouter.get(
   "/",
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    const includeFields = req.query.includeFields === "true";
+
     const tables = await db
       .select({
         id: adminTables.id,
@@ -40,9 +42,51 @@ tablesRouter.get(
       .groupBy(adminTables.id)
       .orderBy(desc(adminTables.updatedAt));
 
+    if (!includeFields) {
+      res.json({
+        data: tables,
+        total: tables.length,
+      });
+      return;
+    }
+
+    const tableIds = tables.map((table) => table.id);
+
+    if (tableIds.length === 0) {
+      res.json({
+        data: [],
+        total: 0,
+      });
+      return;
+    }
+
+    const fields = await db
+      .select()
+      .from(adminFields)
+      .where(inArray(adminFields.tableId, tableIds))
+      .orderBy(
+        asc(adminFields.tableId),
+        asc(adminFields.group),
+        asc(adminFields.sortOrder),
+        asc(adminFields.name),
+      );
+
+    const fieldsByTableId = new Map<string, typeof fields>();
+
+    for (const field of fields) {
+      const currentFields = fieldsByTableId.get(field.tableId) ?? [];
+      currentFields.push(field);
+      fieldsByTableId.set(field.tableId, currentFields);
+    }
+
+    const tablesWithFields = tables.map((table) => ({
+      ...table,
+      fields: fieldsByTableId.get(table.id) ?? [],
+    }));
+
     res.json({
-      data: tables,
-      total: tables.length,
+      data: tablesWithFields,
+      total: tablesWithFields.length,
     });
   }),
 );

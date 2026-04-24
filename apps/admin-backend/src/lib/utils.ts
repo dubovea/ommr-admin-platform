@@ -1,10 +1,3 @@
-import type {
-  CreateAdminFieldInput,
-  NormalizedCreateAdminFieldPayload,
-  NormalizedUpdateAdminFieldPayload,
-  UpdateAdminFieldInput,
-} from "@ommr/shared";
-
 import type { Response } from "express";
 
 export function getRequiredStringForEq(params: {
@@ -56,56 +49,4 @@ export function parseIdsQuery(value: unknown): string[] {
   }
 
   return [];
-}
-
-export function normalizeFieldCreatePayload(
-  payload: CreateAdminFieldInput,
-): NormalizedCreateAdminFieldPayload {
-  const isSelectLike =
-    payload.inputType === "select" || payload.inputType === "multiselect";
-
-  if (!isSelectLike) {
-    return {
-      ...payload,
-      relation: null,
-      relationTargetTableId: null,
-      options: null,
-    };
-  }
-
-  const relation = payload.relation ?? null;
-
-  return {
-    ...payload,
-    relation,
-    relationTargetTableId: relation?.targetTableId ?? null,
-  };
-}
-
-export function normalizeFieldUpdatePayload(
-  payload: UpdateAdminFieldInput,
-): NormalizedUpdateAdminFieldPayload {
-  const isSelectLike =
-    payload.inputType === "select" || payload.inputType === "multiselect";
-
-  if (payload.inputType && !isSelectLike) {
-    return {
-      ...payload,
-      relation: null,
-      relationTargetTableId: null,
-      options: null,
-    };
-  }
-
-  if ("relation" in payload) {
-    const relation = payload.relation ?? null;
-
-    return {
-      ...payload,
-      relation,
-      relationTargetTableId: relation?.targetTableId ?? null,
-    };
-  }
-
-  return payload;
 }

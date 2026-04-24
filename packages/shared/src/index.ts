@@ -67,11 +67,28 @@ export const DEFAULT_FIELD_VALIDATION: FieldValidationMeta = {
   pattern: null,
 };
 
+/**
+ * Полная relation-модель, которая хранится в БД после нормализации backend-ом.
+ */
 export type FieldRelationMeta = {
   targetTableId: string;
   targetTable: string;
   targetKey: string;
   displayField: string;
+  additionalText?: string | null;
+};
+
+/**
+ * Входной relation-payload от frontend/API.
+ *
+ * Frontend может отправить только targetTableId,
+ * а backend сам достроит targetTable, targetKey и displayField.
+ */
+export type FieldRelationInput = {
+  targetTableId?: string | null;
+  targetTable?: string | null;
+  targetKey?: string | null;
+  displayField?: string | null;
   additionalText?: string | null;
 };
 
@@ -100,6 +117,11 @@ export type FieldDefaultValue =
 export type AdminFieldMeta = {
   id: string;
   tableId: string;
+
+  /**
+   * Зеркальная FK-колонка для PostgreSQL.
+   * Основной UI-конфиг лежит в relation.
+   */
   relationTargetTableId?: string | null;
 
   name: string;
@@ -119,7 +141,12 @@ export type AdminFieldMeta = {
   validation?: FieldValidationMeta | null;
   placeholder?: string | null;
   helpText?: string | null;
+
+  /**
+   * Полная relation-модель, уже нормализованная backend-ом.
+   */
   relation?: FieldRelationMeta | null;
+
   sortOrder?: number;
 
   createdAt?: string;
@@ -134,15 +161,24 @@ export type AdminTableMeta = {
   icon?: string | null;
   status: AdminTableStatus;
   source: AdminTableSource;
+
   canList: boolean;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
+
   sortOrder?: number;
+
   fieldsCount?: number;
   relationsCount?: number;
   requiredFieldsCount?: number;
+
+  /**
+   * Присутствует только когда backend возвращает таблицы с includeFields=true
+   * или при детальном запросе таблицы.
+   */
   fields?: AdminFieldMeta[];
+
   createdAt?: string;
   updatedAt?: string;
 };
@@ -165,7 +201,7 @@ export type UpdateAdminTableInput = Partial<
   >
 >;
 
-export type CreateAdminFieldInput = Pick<
+type CreateAdminFieldInputBase = Pick<
   AdminFieldMeta,
   "tableId" | "name" | "label" | "dbType" | "inputType"
 > &
@@ -183,12 +219,11 @@ export type CreateAdminFieldInput = Pick<
       | "validation"
       | "placeholder"
       | "helpText"
-      | "relation"
       | "sortOrder"
     >
   >;
 
-export type UpdateAdminFieldInput = Partial<
+type UpdateAdminFieldInputBase = Partial<
   Pick<
     AdminFieldMeta,
     | "label"
@@ -205,15 +240,48 @@ export type UpdateAdminFieldInput = Partial<
     | "validation"
     | "placeholder"
     | "helpText"
-    | "relation"
     | "sortOrder"
   >
 >;
 
-export type NormalizedCreateAdminFieldPayload = CreateAdminFieldInput & {
+/**
+ * DTO для создания поля.
+ *
+ * relation принимает ослабленный FieldRelationInput,
+ * потому что frontend может отправить только targetTableId.
+ */
+export type CreateAdminFieldInput = CreateAdminFieldInputBase & {
+  relation?: FieldRelationInput | null;
+};
+
+/**
+ * DTO для обновления поля.
+ *
+ * relation принимает ослабленный FieldRelationInput,
+ * потому что backend сам достраивает недостающие части relation.
+ */
+export type UpdateAdminFieldInput = UpdateAdminFieldInputBase & {
+  relation?: FieldRelationInput | null;
+};
+
+/**
+ * Payload, который уже подготовлен backend-ом для insert в admin_fields.
+ */
+export type NormalizedCreateAdminFieldPayload = Omit<
+  CreateAdminFieldInput,
+  "relation"
+> & {
+  relation: FieldRelationMeta | null;
   relationTargetTableId: string | null;
 };
 
-export type NormalizedUpdateAdminFieldPayload = UpdateAdminFieldInput & {
+/**
+ * Payload, который уже подготовлен backend-ом для update admin_fields.
+ */
+export type NormalizedUpdateAdminFieldPayload = Omit<
+  UpdateAdminFieldInput,
+  "relation"
+> & {
+  relation?: FieldRelationMeta | null;
   relationTargetTableId?: string | null;
 };

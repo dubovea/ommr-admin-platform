@@ -27,7 +27,34 @@ export const fieldValidationSchema = z.object({
   pattern: z.string().nullable(),
 });
 
-export const fieldRelationSchema = z.object({
+/**
+ * Входная relation-схема для API.
+ *
+ * Frontend может отправить только:
+ * {
+ *   relation: {
+ *     targetTableId: "..."
+ *   }
+ * }
+ *
+ * Backend потом сам достроит:
+ * targetTable, targetKey, displayField, relationTargetTableId.
+ */
+export const fieldRelationInputSchema = z.object({
+  targetTableId: z.uuid().nullable().optional(),
+  targetTable: z.string().nullable().optional(),
+  targetKey: z.string().nullable().optional(),
+  displayField: z.string().nullable().optional(),
+  additionalText: z.string().nullable().optional(),
+});
+
+/**
+ * Полная relation-схема.
+ *
+ * Нужна не для входящего API, а для уже нормализованной модели,
+ * если где-то захочешь отдельно валидировать результат перед сохранением.
+ */
+export const fieldRelationMetaSchema = z.object({
   targetTableId: z.uuid(),
   targetTable: z.string().min(1),
   targetKey: z.string().min(1),
@@ -76,20 +103,26 @@ export const createFieldSchema = z.object({
   label: z.string().min(1),
   dbType: z.string().nullable().optional(),
   inputType: fieldInputTypeSchema,
+
   required: z.boolean().default(false),
   editable: z.boolean().default(true),
   sortable: z.boolean().default(false),
   filterable: z.boolean().default(false),
   visible: z.boolean().default(true),
+
   group: z.string().nullable().optional(),
   defaultValue: fieldDefaultValueSchema.optional(),
   options: z.array(fieldOptionSchema).nullable().optional(),
+
   validation: fieldValidationSchema
     .nullable()
     .default(DEFAULT_FIELD_VALIDATION),
+
   placeholder: z.string().nullable().optional(),
   helpText: z.string().nullable().optional(),
-  relation: fieldRelationSchema.nullable().optional(),
+
+  relation: fieldRelationInputSchema.nullable().optional(),
+
   sortOrder: z.number().int().positive().optional(),
 }) satisfies z.ZodType<CreateAdminFieldInput>;
 
@@ -99,18 +132,24 @@ export const updateFieldSchema = z.object({
   label: z.string().min(1).optional(),
   dbType: z.string().nullable().optional(),
   inputType: fieldInputTypeSchema.optional(),
+
   required: z.boolean().optional(),
   editable: z.boolean().optional(),
   sortable: z.boolean().optional(),
   filterable: z.boolean().optional(),
   visible: z.boolean().optional(),
+
   group: z.string().nullable().optional(),
   defaultValue: fieldDefaultValueSchema.optional(),
   options: z.array(fieldOptionSchema).nullable().optional(),
+
   validation: fieldValidationSchema.nullable().optional(),
+
   placeholder: z.string().nullable().optional(),
   helpText: z.string().nullable().optional(),
-  relation: fieldRelationSchema.nullable().optional(),
+
+  relation: fieldRelationInputSchema.nullable().optional(),
+
   sortOrder: z.number().int().positive().optional(),
 }) satisfies z.ZodType<UpdateAdminFieldInput>;
 

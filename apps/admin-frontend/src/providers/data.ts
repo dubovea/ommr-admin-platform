@@ -73,16 +73,19 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const dataProvider: DataProvider = {
-  getList: async ({ resource, pagination, filters, sorters }) => {
+  getList: async ({ resource, pagination, filters, sorters, meta }) => {
     const searchParams = new URLSearchParams();
 
     if (pagination?.mode !== "off") {
       searchParams.set("page", String(pagination?.currentPage ?? 1));
       searchParams.set("pageSize", String(pagination?.pageSize ?? 10));
     }
-
     appendFilters(searchParams, filters);
     appendSorters(searchParams, sorters);
+
+    if (meta?.includeFields) {
+      searchParams.set("includeFields", "true");
+    }
 
     const qs = searchParams.toString();
 
