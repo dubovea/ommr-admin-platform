@@ -1,9 +1,9 @@
-import { useRef } from "react";
-import { Bell, Loader2, Search, Upload } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useImportPydanticSchema } from "@/providers/pydantic";
 import { UserInfo } from "./user-info";
+import { ImportPydanticButton } from "@/components/ImportPydanticButton";
+import { ExportMetadataButton } from "@/components/ExportMetadataButton";
 
 export function Header() {
   return (
@@ -20,45 +20,12 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3">
         <ImportPydanticButton />
+        <ExportMetadataButton/>
         <Button variant="ghost" size="icon">
           <Bell className="size-5" />
         </Button>
         <UserInfo />
       </div>
     </header>
-  );
-}
-
-function ImportPydanticButton() {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const { importFile, isPending } = useImportPydanticSchema();
-  return (
-    <>
-      <Button
-        variant="outline"
-        disabled={isPending}
-        className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-700"
-        onClick={() => inputRef.current?.click()}
-      >
-        {isPending ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <Upload className="size-4" />
-        )}
-        {isPending ? "Импорт..." : "Импортировать схему Pydantic"}
-      </Button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="application/json,.json"
-        hidden
-        onChange={async (event) => {
-          const file = event.target.files?.[0];
-          if (!file) return;
-          await importFile(file);
-          event.target.value = "";
-        }}
-      />
-    </>
   );
 }
