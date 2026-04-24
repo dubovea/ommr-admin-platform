@@ -68,6 +68,7 @@ export const DEFAULT_FIELD_VALIDATION: FieldValidationMeta = {
 };
 
 export type FieldRelationMeta = {
+  targetTableId: string;
   targetTable: string;
   targetKey: string;
   displayField: string;
@@ -99,23 +100,28 @@ export type FieldDefaultValue =
 export type AdminFieldMeta = {
   id: string;
   tableId: string;
+  relationTargetTableId?: string | null;
+
   name: string;
   label: string;
-  dbType?: string;
+  dbType?: string | null;
   inputType: FieldInputType;
+
   required: boolean;
   editable: boolean;
   sortable: boolean;
   filterable: boolean;
   visible: boolean;
+
   group?: string | null;
-  defaultValue?: FieldDefaultValue;
+  defaultValue?: FieldDefaultValue | null;
   options?: FieldOption[] | null;
   validation?: FieldValidationMeta | null;
   placeholder?: string | null;
   helpText?: string | null;
   relation?: FieldRelationMeta | null;
   sortOrder?: number;
+
   createdAt?: string;
   updatedAt?: string;
 };
@@ -203,3 +209,11 @@ export type UpdateAdminFieldInput = Partial<
     | "sortOrder"
   >
 >;
+
+export type NormalizedCreateAdminFieldPayload = CreateAdminFieldInput & {
+  relationTargetTableId: string | null;
+};
+
+export type NormalizedUpdateAdminFieldPayload = UpdateAdminFieldInput & {
+  relationTargetTableId?: string | null;
+};

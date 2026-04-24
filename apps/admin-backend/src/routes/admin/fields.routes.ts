@@ -5,34 +5,59 @@ import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
 import { createFieldSchema, updateFieldSchema } from "../../validation.js";
-import { normalizeFieldUpdatePayload, parseIdsQuery } from "../../lib/utils.js";
+import {
+  getRequiredStringForEq,
+  normalizeFieldCreatePayload,
+  normalizeFieldUpdatePayload,
+  parseIdsQuery,
+} from "../../lib/utils.js";
 
 export const fieldsRouter = Router();
 
 fieldsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const tableId = req.query.tableId;
+    const method = "GET /fields";
+    const tableIdQuery = req.query.tableId;
 
-    const fields =
-      typeof tableId === "string"
-        ? await db
-            .select()
-            .from(adminFields)
-            .where(eq(adminFields.tableId, tableId))
-            .orderBy(
-              asc(adminFields.group),
-              asc(adminFields.sortOrder),
-              asc(adminFields.name),
-            )
-        : await db
-            .select()
-            .from(adminFields)
-            .orderBy(
-              asc(adminFields.group),
-              asc(adminFields.sortOrder),
-              asc(adminFields.name),
-            );
+    if (tableIdQuery !== undefined) {
+      const tableId = getRequiredStringForEq({
+        value: tableIdQuery,
+        field: "tableId",
+        method,
+        res,
+      });
+
+      if (!tableId) {
+        return;
+      }
+
+      const fields = await db
+        .select()
+        .from(adminFields)
+        .where(eq(adminFields.tableId, tableId))
+        .orderBy(
+          asc(adminFields.group),
+          asc(adminFields.sortOrder),
+          asc(adminFields.name),
+        );
+
+      res.json({
+        data: fields,
+        total: fields.length,
+      });
+
+      return;
+    }
+
+    const fields = await db
+      .select()
+      .from(adminFields)
+      .orderBy(
+        asc(adminFields.group),
+        asc(adminFields.sortOrder),
+        asc(adminFields.name),
+      );
 
     res.json({
       data: fields,
@@ -44,12 +69,26 @@ fieldsRouter.get(
 fieldsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
+    const method = "POST /fields";
+
     const payload = createFieldSchema.parse(req.body);
+    const normalizedPayload = normalizeFieldCreatePayload(payload);
+
+    const tableId = getRequiredStringForEq({
+      value: payload.tableId,
+      field: "tableId",
+      method,
+      res,
+    });
+
+    if (!tableId) {
+      return;
+    }
 
     const [created] = await db.transaction(async (tx) => {
       const [newField] = await tx
         .insert(adminFields)
-        .values(payload)
+        .values(normalizedPayload)
         .returning();
 
       await tx
@@ -57,7 +96,7 @@ fieldsRouter.post(
         .set({
           updatedAt: new Date(),
         })
-        .where(eq(adminTables.id, payload.tableId));
+        .where(eq(adminTables.id, tableId));
 
       return [newField];
     });
@@ -71,6 +110,19 @@ fieldsRouter.post(
 fieldsRouter.patch(
   "/:id",
   asyncHandler(async (req, res) => {
+    const method = "PATCH /fields/:id";
+
+    const id = getRequiredStringForEq({
+      value: req.params.id,
+      field: "id",
+      method,
+      res,
+    });
+
+    if (!id) {
+      return;
+    }
+
     const payload = updateFieldSchema.parse(req.body);
     const normalizedPayload = normalizeFieldUpdatePayload(payload);
 
@@ -81,9 +133,20 @@ fieldsRouter.patch(
           tableId: adminFields.tableId,
         })
         .from(adminFields)
-        .where(eq(adminFields.id, req.params.id));
+        .where(eq(adminFields.id, id));
 
       if (!field) {
+        return [null];
+      }
+
+      const tableId = getRequiredStringForEq({
+        value: field.tableId,
+        field: "tableId",
+        method,
+        res,
+      });
+
+      if (!tableId) {
         return [null];
       }
 
@@ -93,7 +156,7 @@ fieldsRouter.patch(
           ...normalizedPayload,
           updatedAt: new Date(),
         })
-        .where(eq(adminFields.id, req.params.id))
+        .where(eq(adminFields.id, id))
         .returning();
 
       await tx
@@ -101,7 +164,7 @@ fieldsRouter.patch(
         .set({
           updatedAt: new Date(),
         })
-        .where(eq(adminTables.id, field.tableId));
+        .where(eq(adminTables.id, tableId));
 
       return [updatedField];
     });
@@ -109,6 +172,10 @@ fieldsRouter.patch(
     if (!updated) {
       res.status(404).json({
         error: "Field not found",
+        method,
+        field: "id",
+        value: id,
+        reason: "No field found with provided id",
       });
       return;
     }
@@ -122,11 +189,17 @@ fieldsRouter.patch(
 fieldsRouter.delete(
   "/",
   asyncHandler(async (req, res) => {
+    const method = "DELETE /fields";
+
     const ids = parseIdsQuery(req.query.ids);
 
     if (ids.length === 0) {
       res.status(400).json({
-        error: "Передайте ids через query: ?ids=id1&ids=id2",
+        error: "Invalid field value",
+        method,
+        field: "ids",
+        value: req.query.ids,
+        reason: "Передайте ids через query: ?ids=id1&ids=id2",
       });
       return;
     }
@@ -175,6 +248,19 @@ fieldsRouter.delete(
 fieldsRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
+    const method = "DELETE /fields/:id";
+
+    const id = getRequiredStringForEq({
+      value: req.params.id,
+      field: "id",
+      method,
+      res,
+    });
+
+    if (!id) {
+      return;
+    }
+
     const result = await db.transaction(async (tx) => {
       const [field] = await tx
         .select({
@@ -182,7 +268,7 @@ fieldsRouter.delete(
           tableId: adminFields.tableId,
         })
         .from(adminFields)
-        .where(eq(adminFields.id, req.params.id));
+        .where(eq(adminFields.id, id));
 
       if (!field) {
         return {
@@ -190,9 +276,22 @@ fieldsRouter.delete(
         };
       }
 
+      const tableId = getRequiredStringForEq({
+        value: field.tableId,
+        field: "tableId",
+        method,
+        res,
+      });
+
+      if (!tableId) {
+        return {
+          deleted: null,
+        };
+      }
+
       const [deleted] = await tx
         .delete(adminFields)
-        .where(eq(adminFields.id, req.params.id))
+        .where(eq(adminFields.id, id))
         .returning();
 
       await tx
@@ -200,7 +299,7 @@ fieldsRouter.delete(
         .set({
           updatedAt: new Date(),
         })
-        .where(eq(adminTables.id, field.tableId));
+        .where(eq(adminTables.id, tableId));
 
       return { deleted };
     });
@@ -208,6 +307,10 @@ fieldsRouter.delete(
     if (!result.deleted) {
       res.status(404).json({
         error: "Field not found",
+        method,
+        field: "id",
+        value: id,
+        reason: "No field found with provided id",
       });
       return;
     }

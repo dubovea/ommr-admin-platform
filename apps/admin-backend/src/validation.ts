@@ -6,10 +6,6 @@ import {
   FIELD_INPUT_TYPES,
   type CreateAdminFieldInput,
   type CreateAdminTableInput,
-  type FieldDefaultValue,
-  type FieldOption,
-  type FieldRelationMeta,
-  type FieldValidationMeta,
   type UpdateAdminFieldInput,
   type UpdateAdminTableInput,
 } from "@ommr/shared";
@@ -32,9 +28,10 @@ export const fieldValidationSchema = z.object({
 });
 
 export const fieldRelationSchema = z.object({
-  targetTable: z.string(),
-  targetKey: z.string(),
-  displayField: z.string(),
+  targetTableId: z.uuid(),
+  targetTable: z.string().min(1),
+  targetKey: z.string().min(1),
+  displayField: z.string().min(1),
   additionalText: z.string().nullable().optional(),
 });
 
@@ -74,10 +71,10 @@ export const updateTableSchema = z.object({
 export type UpdateTableDto = UpdateAdminTableInput;
 
 export const createFieldSchema = z.object({
-  tableId: z.string().uuid(),
+  tableId: z.uuid(),
   name: z.string().min(1),
   label: z.string().min(1),
-  dbType: z.string().optional(),
+  dbType: z.string().nullable().optional(),
   inputType: fieldInputTypeSchema,
   required: z.boolean().default(false),
   editable: z.boolean().default(true),
@@ -87,7 +84,9 @@ export const createFieldSchema = z.object({
   group: z.string().nullable().optional(),
   defaultValue: fieldDefaultValueSchema.optional(),
   options: z.array(fieldOptionSchema).nullable().optional(),
-  validation: fieldValidationSchema.nullable().default(DEFAULT_FIELD_VALIDATION),
+  validation: fieldValidationSchema
+    .nullable()
+    .default(DEFAULT_FIELD_VALIDATION),
   placeholder: z.string().nullable().optional(),
   helpText: z.string().nullable().optional(),
   relation: fieldRelationSchema.nullable().optional(),
@@ -98,7 +97,7 @@ export type CreateFieldDto = CreateAdminFieldInput;
 
 export const updateFieldSchema = z.object({
   label: z.string().min(1).optional(),
-  dbType: z.string().optional(),
+  dbType: z.string().nullable().optional(),
   inputType: fieldInputTypeSchema.optional(),
   required: z.boolean().optional(),
   editable: z.boolean().optional(),

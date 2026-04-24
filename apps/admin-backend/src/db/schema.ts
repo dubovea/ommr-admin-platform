@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -62,44 +63,62 @@ export const adminTables = pgTable("admin_tables", {
     .defaultNow(),
 });
 
-export const adminFields = pgTable("admin_fields", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const adminFields = pgTable(
+  "admin_fields",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  tableId: uuid("table_id")
-    .notNull()
-    .references(() => adminTables.id, { onDelete: "cascade" }),
+    tableId: uuid("table_id")
+      .notNull()
+      .references(() => adminTables.id, { onDelete: "cascade" }),
 
-  name: text("name").notNull(),
-  label: text("label").notNull(),
-  dbType: text("db_type"),
+    relationTargetTableId: uuid("relation_target_table_id").references(
+      () => adminTables.id,
+      { onDelete: "set null" },
+    ),
 
-  inputType: fieldInputTypeEnum("input_type").notNull(),
-  visible: boolean("visible").notNull().default(true),
-  required: boolean("required").notNull().default(false),
-  editable: boolean("editable").notNull().default(true),
-  sortable: boolean("sortable").notNull().default(false),
-  filterable: boolean("filterable").notNull().default(false),
+    relation: jsonb("relation").$type<FieldRelationMeta | null>(),
 
-  group: text("group_name"),
-  defaultValue: jsonb("default_value").$type<FieldDefaultValue | null>(),
-  options: jsonb("options").$type<FieldOption[] | null>(),
-  validation: jsonb("validation").$type<FieldValidationMeta | null>(),
+    name: text("name").notNull(),
+    label: text("label").notNull(),
+    dbType: text("db_type"),
 
-  placeholder: text("placeholder"),
-  helpText: text("help_text"),
-  relation: jsonb("relation").$type<FieldRelationMeta | null>(),
+    inputType: fieldInputTypeEnum("input_type").notNull(),
 
-  sortOrder: integer("sort_order").notNull().default(0),
+    visible: boolean("visible").notNull().default(true),
+    required: boolean("required").notNull().default(false),
+    editable: boolean("editable").notNull().default(true),
+    sortable: boolean("sortable").notNull().default(false),
+    filterable: boolean("filterable").notNull().default(false),
 
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+    group: text("group_name"),
+
+    defaultValue: jsonb("default_value").$type<FieldDefaultValue | null>(),
+    options: jsonb("options").$type<FieldOption[] | null>(),
+    validation: jsonb("validation").$type<FieldValidationMeta | null>(),
+
+    placeholder: text("placeholder"),
+    helpText: text("help_text"),
+
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("admin_fields_table_id_idx").on(table.tableId),
+    index("admin_fields_relation_target_table_id_idx").on(
+      table.relationTargetTableId,
+    ),
+  ],
+);
 
 export type AdminTableRow = typeof adminTables.$inferSelect;
 export type NewAdminTableRow = typeof adminTables.$inferInsert;
+
 export type AdminFieldRow = typeof adminFields.$inferSelect;
 export type NewAdminFieldRow = typeof adminFields.$inferInsert;
