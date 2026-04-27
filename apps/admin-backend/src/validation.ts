@@ -75,10 +75,13 @@ export const fieldDefaultValueSchema = z.union([
 export const createTableSchema = z.object({
   name: z.string().min(1),
   label: z.string().min(1),
+  group: z.string().nullable().optional(),
+  groupName: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   status: tableStatusSchema.default("needs_setup"),
   source: tableSourceSchema.default("manual"),
   icon: z.string().default("table"),
+  showInMenu: z.boolean().default(true),
 }) satisfies z.ZodType<CreateAdminTableInput>;
 
 export type CreateTableDto = CreateAdminTableInput;
@@ -86,9 +89,12 @@ export type CreateTableDto = CreateAdminTableInput;
 export const updateTableSchema = z.object({
   label: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
+  group: z.string().nullable().optional(),
+  groupName: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   status: tableStatusSchema.optional(),
   icon: z.string().nullable().optional(),
+  showInMenu: z.boolean().optional(),
   canList: z.boolean().optional(),
   canCreate: z.boolean().optional(),
   canEdit: z.boolean().optional(),

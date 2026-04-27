@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { asc, eq } from "drizzle-orm";
-import type { AdminFieldMeta, AdminTableMeta } from "@ommr/shared";
+import type {
+  AdminFieldMeta,
+  MetadataExport,
+  MetadataExportMenuGroup,
+  MetadataExportTable,
+} from "@ommr/shared";
 
 import { db } from "../../db/index.js";
 import { asyncHandler } from "../../lib/async-handler.js";
@@ -8,20 +13,27 @@ import { adminFields, adminTables } from "../../db/schema.js";
 
 export const metadataRouter = Router();
 
-type ExportFieldRelation = Omit<
-  NonNullable<AdminFieldMeta["relation"]>,
-  "targetTableId"
-> | null;
+type ExportTableMeta = MetadataExportTable;
 
-type ExportFieldMeta = Pick<
-  AdminFieldMeta,
-  "name" | "label" | "inputType" | "visible" | "editable" | "required"
-> & {
-  relation: ExportFieldRelation;
-};
+type ExportMenuGroup = MetadataExportMenuGroup;
 
-type ExportTableMeta = Pick<AdminTableMeta, "name" | "label"> & {
-  fields: ExportFieldMeta[];
+type TableRowForExport = {
+  tableId: string;
+  tableName: string;
+  tableLabel: string;
+  tableGroup: string | null;
+  tableGroupName: string | null;
+  tableShowInMenu: boolean;
+  tableSortOrder: number;
+
+  fieldId: string | null;
+  fieldName: string | null;
+  fieldLabel: string | null;
+  fieldInputType: AdminFieldMeta["inputType"] | null;
+  fieldVisible: boolean | null;
+  fieldRequired: boolean | null;
+  fieldEditable: boolean | null;
+  fieldRelation: AdminFieldMeta["relation"] | null;
 };
 
 function toExportRelation(relation: AdminFieldMeta["relation"]) {
@@ -34,6 +46,92 @@ function toExportRelation(relation: AdminFieldMeta["relation"]) {
   return exportRelation;
 }
 
+function getMenuGroupId(table: ExportTableMeta) {
+  return table.group || "ungrouped";
+}
+
+function getMenuGroupLabel(table: ExportTableMeta) {
+  return table.groupName || table.group || "Без группы";
+}
+
+function buildMenu(tables: ExportTableMeta[]): ExportMenuGroup[] {
+  const groupsMap = new Map<string, ExportMenuGroup>();
+
+  for (const table of tables) {
+    if (!table.showInMenu) {
+      continue;
+    }
+
+    const groupId = getMenuGroupId(table);
+    const groupLabel = getMenuGroupLabel(table);
+
+    const group = groupsMap.get(groupId);
+
+    if (group) {
+      group.elements.push({
+        id: table.name,
+        label: table.label,
+      });
+
+      continue;
+    }
+
+    groupsMap.set(groupId, {
+      id: groupId,
+      label: groupLabel,
+      elements: [
+        {
+          id: table.name,
+          label: table.label,
+        },
+      ],
+    });
+  }
+
+  return [...groupsMap.values()];
+}
+
+function buildMetadataExport(rows: TableRowForExport[]): MetadataExport {
+  const tablesMap = new Map<string, ExportTableMeta>();
+
+  for (const row of rows) {
+    let table = tablesMap.get(row.tableId);
+
+    if (!table) {
+      table = {
+        name: row.tableName,
+        label: row.tableLabel,
+        group: row.tableGroup,
+        groupName: row.tableGroupName,
+        showInMenu: row.tableShowInMenu,
+        fields: [],
+      };
+
+      tablesMap.set(row.tableId, table);
+    }
+
+    if (row.fieldId) {
+      table.fields.push({
+        name: row.fieldName ?? "",
+        label: row.fieldLabel ?? "",
+        inputType: row.fieldInputType!,
+        visible: row.fieldVisible ?? true,
+        required: row.fieldRequired ?? false,
+        editable: row.fieldEditable ?? true,
+        relation: toExportRelation(row.fieldRelation),
+      });
+    }
+  }
+
+  const tables = [...tablesMap.values()];
+  const menu = buildMenu(tables);
+
+  return {
+    tables,
+    menu,
+  };
+}
+
 metadataRouter.get(
   "/",
   asyncHandler(async (req, res) => {
@@ -42,6 +140,10 @@ metadataRouter.get(
         tableId: adminTables.id,
         tableName: adminTables.name,
         tableLabel: adminTables.label,
+        tableGroup: adminTables.group,
+        tableGroupName: adminTables.groupName,
+        tableShowInMenu: adminTables.showInMenu,
+        tableSortOrder: adminTables.sortOrder,
 
         fieldId: adminFields.id,
         fieldName: adminFields.name,
@@ -55,40 +157,14 @@ metadataRouter.get(
       .from(adminTables)
       .leftJoin(adminFields, eq(adminTables.id, adminFields.tableId))
       .orderBy(
+        asc(adminTables.group),
+        asc(adminTables.sortOrder),
         asc(adminTables.name),
         asc(adminFields.sortOrder),
         asc(adminFields.name),
       );
 
-    const tablesMap = new Map<string, ExportTableMeta>();
-
-    for (const row of rows) {
-      let table = tablesMap.get(row.tableId);
-
-      if (!table) {
-        table = {
-          name: row.tableName,
-          label: row.tableLabel,
-          fields: [],
-        };
-
-        tablesMap.set(row.tableId, table);
-      }
-
-      if (row.fieldId) {
-        table.fields.push({
-          name: row.fieldName ?? "",
-          label: row.fieldLabel ?? "",
-          inputType: row.fieldInputType!,
-          visible: row.fieldVisible ?? true,
-          required: row.fieldRequired ?? false,
-          editable: row.fieldEditable ?? true,
-          relation: toExportRelation(row.fieldRelation),
-        });
-      }
-    }
-
-    const data = [...tablesMap.values()];
+    const data = buildMetadataExport(rows);
 
     const shouldDownload = req.query.download === "true";
 

@@ -2,9 +2,9 @@
 
 import type { BaseRecord, HttpError } from "@refinedev/core";
 import type { UseTableReturnType } from "@refinedev/react-table";
-import type { Column } from "@tanstack/react-table";
+import type { Column, Row } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
@@ -28,7 +28,12 @@ export function DataTable<TData extends BaseRecord>({
   onRowClick,
 }: DataTableProps<TData>) {
   const {
-    reactTable: { getHeaderGroups, getRowModel, getAllColumns },
+    reactTable: {
+      getHeaderGroups,
+      getRowModel,
+      getAllColumns,
+      getVisibleLeafColumns,
+    },
     refineCore: {
       tableQuery,
       currentPage,
@@ -40,11 +45,12 @@ export function DataTable<TData extends BaseRecord>({
   } = table;
 
   const columns = getAllColumns();
-  const leafColumns = table.reactTable.getAllLeafColumns();
+  const leafColumns = getVisibleLeafColumns();
   const isLoading = tableQuery.isLoading;
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
+
   const [isOverflowing, setIsOverflowing] = useState({
     horizontal: false,
     vertical: false,
@@ -53,11 +59,13 @@ export function DataTable<TData extends BaseRecord>({
   useEffect(() => {
     const checkOverflow = () => {
       if (tableRef.current && tableContainerRef.current) {
-        const table = tableRef.current;
+        const tableElement = tableRef.current;
         const container = tableContainerRef.current;
 
-        const horizontalOverflow = table.offsetWidth > container.clientWidth;
-        const verticalOverflow = table.offsetHeight > container.clientHeight;
+        const horizontalOverflow =
+          tableElement.offsetWidth > container.clientWidth;
+        const verticalOverflow =
+          tableElement.offsetHeight > container.clientHeight;
 
         setIsOverflowing({
           horizontal: horizontalOverflow,
@@ -68,21 +76,24 @@ export function DataTable<TData extends BaseRecord>({
 
     checkOverflow();
 
-    // Check on window resize
     window.addEventListener("resize", checkOverflow);
 
-    // Check when table data changes
-    const timeoutId = setTimeout(checkOverflow, 100);
+    const timeoutId = window.setTimeout(checkOverflow, 100);
 
     return () => {
       window.removeEventListener("resize", checkOverflow);
-      clearTimeout(timeoutId);
+      window.clearTimeout(timeoutId);
     };
-  }, [tableQuery.data?.data, pageSize]);
+  }, [tableQuery.data?.data, pageSize, getRowModel().rows.length]);
+
+  const rows = getRowModel().rows;
+  const visibleColumnsCount = Math.max(leafColumns.length, 1);
+  const shouldShowPagination =
+    !isLoading && rows.length > 0 && Number(pageCount) > 1;
 
   return (
-    <div className={cn("flex", "flex-col", "flex-1", "gap-4")}>
-      <div ref={tableContainerRef} className={cn("rounded-md", "border")}>
+    <div className={cn("flex flex-1 flex-col gap-4")}>
+      <div ref={tableContainerRef} className={cn("rounded-md border")}>
         <Table ref={tableRef} style={{ tableLayout: "fixed", width: "100%" }}>
           <TableHeader>
             {getHeaderGroups().map((headerGroup) => (
@@ -96,12 +107,12 @@ export function DataTable<TData extends BaseRecord>({
                       style={{
                         ...getCommonStyles({
                           column: header.column,
-                          isOverflowing: isOverflowing,
+                          isOverflowing,
                         }),
                       }}
                     >
                       {isPlaceholder ? null : (
-                        <div className={cn("flex", "items-center", "gap-1")}>
+                        <div className={cn("flex items-center gap-1")}>
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext(),
@@ -114,6 +125,7 @@ export function DataTable<TData extends BaseRecord>({
               </TableRow>
             ))}
           </TableHeader>
+
           <TableBody className="relative">
             {isLoading ? (
               <>
@@ -129,7 +141,7 @@ export function DataTable<TData extends BaseRecord>({
                           style={{
                             ...getCommonStyles({
                               column,
-                              isOverflowing: isOverflowing,
+                              isOverflowing,
                             }),
                           }}
                           className={cn("truncate")}
@@ -140,73 +152,41 @@ export function DataTable<TData extends BaseRecord>({
                     </TableRow>
                   ),
                 )}
+
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
-                    className={cn("absolute", "inset-0", "pointer-events-none")}
+                    colSpan={visibleColumnsCount}
+                    className={cn("pointer-events-none absolute inset-0")}
                   >
                     <Loader2
                       className={cn(
-                        "absolute",
-                        "top-1/2",
-                        "left-1/2",
-                        "animate-spin",
-                        "text-primary",
-                        "h-8",
-                        "w-8",
-                        "-translate-x-1/2",
-                        "-translate-y-1/2",
+                        "absolute top-1/2 left-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary",
                       )}
                     />
                   </TableCell>
                 </TableRow>
               </>
-            ) : getRowModel().rows?.length ? (
-              getRowModel().rows.map((row) => {
-                return (
-                  <TableRow
-                    key={row.original?.id ?? row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    className={cn(
-                      onRowClick && "cursor-pointer",
-                      row.getIsSelected() &&
-                        "bg-blue-50 hover:bg-blue-50 shadow-[inset_3px_0_0_#2563eb]",
-                    )}
-                    onClick={() => onRowClick?.(row.original)}
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      return (
-                        <TableCell
-                          key={cell.id}
-                          style={{
-                            ...getCommonStyles({
-                              column: cell.column,
-                              isOverflowing: isOverflowing,
-                            }),
-                          }}
-                        >
-                          <div className="truncate">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </div>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })
+            ) : rows.length ? (
+              rows.map((row) => (
+                <DataTableBodyRow
+                  key={row.id}
+                  row={row}
+                  isOverflowing={isOverflowing}
+                  visibleColumnsCount={visibleColumnsCount}
+                  onRowClick={onRowClick}
+                />
+              ))
             ) : (
               <DataTableNoData
                 isOverflowing={isOverflowing}
-                columnsLength={columns.length}
+                columnsLength={visibleColumnsCount}
               />
             )}
           </TableBody>
         </Table>
       </div>
-      {!isLoading && getRowModel().rows?.length > 0 && (
+
+      {shouldShowPagination && (
         <DataTablePagination
           currentPage={currentPage}
           pageCount={pageCount}
@@ -220,6 +200,95 @@ export function DataTable<TData extends BaseRecord>({
   );
 }
 
+function DataTableBodyRow<TData extends BaseRecord>({
+  row,
+  isOverflowing,
+  visibleColumnsCount,
+  onRowClick,
+}: {
+  row: Row<TData>;
+  isOverflowing: {
+    horizontal: boolean;
+    vertical: boolean;
+  };
+  visibleColumnsCount: number;
+  onRowClick?: (row: TData) => void;
+}) {
+  if (row.getIsGrouped()) {
+    const groupValue = getGroupedRowValue(row);
+    const leafRowsCount = row.getLeafRows().length;
+
+    return (
+      <TableRow className="bg-muted/60 hover:bg-muted/60">
+        <TableCell colSpan={visibleColumnsCount} className="h-11 py-2">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 text-left text-sm font-semibold"
+            onClick={row.getToggleExpandedHandler()}
+          >
+            {row.getIsExpanded() ? (
+              <ChevronDown className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-4 text-muted-foreground" />
+            )}
+
+            <span>{groupValue}</span>
+
+            <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              {leafRowsCount}
+            </span>
+          </button>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  return (
+    <TableRow
+      key={row.original?.id ?? row.id}
+      data-state={row.getIsSelected() && "selected"}
+      className={cn(
+        onRowClick && "cursor-pointer",
+        row.getIsSelected() &&
+          "bg-blue-50 hover:bg-blue-50 shadow-[inset_3px_0_0_#2563eb]",
+      )}
+      onClick={() => onRowClick?.(row.original)}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <TableCell
+          key={cell.id}
+          style={{
+            ...getCommonStyles({
+              column: cell.column,
+              isOverflowing,
+            }),
+          }}
+        >
+          <div className="truncate">
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </div>
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+}
+
+function getGroupedRowValue<TData extends BaseRecord>(row: Row<TData>) {
+  const groupedCell = row
+    .getVisibleCells()
+    .find((cell) => cell.getIsGrouped());
+
+  const groupingColumnId = row.groupingColumnId;
+  const value =
+    groupedCell?.getValue() ??
+    (groupingColumnId ? row.getValue(groupingColumnId) : undefined) ??
+    row.groupingValue;
+
+  return value === null || value === undefined || value === ""
+    ? "Без группы"
+    : String(value);
+}
+
 function DataTableNoData({
   isOverflowing,
   columnsLength,
@@ -231,33 +300,27 @@ function DataTableNoData({
     <TableRow className="hover:bg-transparent">
       <TableCell
         colSpan={columnsLength}
-        className={cn("relative", "text-center")}
+        className={cn("relative text-center")}
         style={{ height: "490px" }}
       >
         <div
           className={cn(
-            "absolute",
-            "inset-0",
-            "flex",
-            "flex-col",
-            "items-center",
-            "justify-center",
-            "gap-2",
-            "bg-background",
+            "absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background",
           )}
           style={{
             position: isOverflowing.horizontal ? "sticky" : "absolute",
-            left: isOverflowing.horizontal ? "50%" : "50%",
+            left: "50%",
             transform: "translateX(-50%)",
             zIndex: isOverflowing.horizontal ? 2 : 1,
             width: isOverflowing.horizontal ? "fit-content" : "100%",
             minWidth: "300px",
           }}
         >
-          <div className={cn("text-lg", "font-semibold", "text-foreground")}>
+          <div className={cn("text-lg font-semibold text-foreground")}>
             No data to display
           </div>
-          <div className={cn("text-sm", "text-muted-foreground")}>
+
+          <div className={cn("text-sm text-muted-foreground")}>
             This table is empty for the time being.
           </div>
         </div>

@@ -7,6 +7,8 @@ import { errorHandler } from "./middlewares/error-handler.js";
 const app = express();
 
 const port = Number(process.env.PORT ?? 4000);
+const host = process.env.HOST ?? "0.0.0.0";
+const jsonLimit = process.env.JSON_BODY_LIMIT ?? "20mb";
 
 app.use(
   cors({
@@ -15,7 +17,7 @@ app.use(
   }),
 );
 
-app.use(express.json());
+app.use(express.json({ limit: jsonLimit }));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
@@ -25,6 +27,6 @@ app.use("/api/admin", adminRouter);
 
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`[api] http://localhost:${port}`);
+app.listen(port, host, () => {
+  console.log(`[api] http://${host}:${port}`);
 });

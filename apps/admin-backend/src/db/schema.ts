@@ -37,31 +37,57 @@ export const fieldInputTypeEnum = pgEnum(
   toPgEnumValues(FIELD_INPUT_TYPES),
 );
 
-export const adminTables = pgTable("admin_tables", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const adminTables = pgTable(
+  "admin_tables",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  name: text("name").notNull(),
-  label: text("label").notNull(),
-  description: text("description"),
+    name: text("name").notNull(),
+    label: text("label").notNull(),
+    description: text("description"),
 
-  icon: text("icon").default("table"),
-  status: tableStatusEnum("status").notNull().default("needs_setup"),
-  source: tableSourceEnum("source").notNull().default("pydantic"),
+    /**
+     * Группа таблицы для меню / навигации.
+     *
+     * Пример:
+     * group: "master_tables"
+     * groupName: "Мастер-таблицы"
+     */
+    group: text("group_key"),
+    groupName: text("group_name"),
 
-  canList: boolean("can_list").notNull().default(true),
-  canCreate: boolean("can_create").notNull().default(true),
-  canEdit: boolean("can_edit").notNull().default(true),
-  canDelete: boolean("can_delete").notNull().default(true),
+    /**
+     * Показывать ли таблицу в пользовательском меню.
+     *
+     * Например технические таблицы или служебные модели можно импортировать,
+     * но не выводить в sidebar.
+     */
+    showInMenu: boolean("show_in_menu").notNull().default(true),
 
-  sortOrder: integer("sort_order").notNull().default(0),
+    icon: text("icon").default("table"),
+    status: tableStatusEnum("status").notNull().default("needs_setup"),
+    source: tableSourceEnum("source").notNull().default("pydantic"),
 
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+    canList: boolean("can_list").notNull().default(true),
+    canCreate: boolean("can_create").notNull().default(true),
+    canEdit: boolean("can_edit").notNull().default(true),
+    canDelete: boolean("can_delete").notNull().default(true),
+
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("admin_tables_group_key_idx").on(table.group),
+    index("admin_tables_show_in_menu_idx").on(table.showInMenu),
+    index("admin_tables_sort_order_idx").on(table.sortOrder),
+  ],
+);
 
 export const adminFields = pgTable(
   "admin_fields",

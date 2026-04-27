@@ -1,15 +1,31 @@
 import {
   DEFAULT_FIELD_VALIDATION,
+  SIDEBAR_ITEMS,
   type CreateAdminFieldInput,
   type FieldInputType,
   type FieldOption,
   type FieldRelationMeta,
 } from "@ommr/shared";
 
+type SidebarGroupItem = {
+  id: string;
+  label: string;
+  elements: Array<{
+    id: string;
+    label: string;
+  }>;
+};
+
+type TableGroupMeta = {
+  group: string;
+  groupName: string;
+};
+
 type JsonSchemaRelation = {
   to_table?: string;
   link_key?: string;
   display_field?: string;
+  additional_text?: string | null;
 };
 
 type JsonSchema = {
@@ -29,6 +45,27 @@ type JsonSchema = {
   definitions?: Record<string, JsonSchema>;
   components?: { schemas?: Record<string, JsonSchema> };
   "x-relation"?: JsonSchemaRelation;
+  "x-group"?: string;
+  "x-group-name"?: string;
+};
+
+type ExtractedSchemaEntry = {
+  /**
+   * Имя root-свойства, под которым таблица подключена в основной модели.
+   * Например: cargoes, tracks, shipments.
+   */
+  tableName: string;
+
+  /**
+   * Схема таблицы из $defs / definitions / components.schemas.
+   */
+  modelSchema: JsonSchema;
+
+  /**
+   * Root-свойство из основной модели.
+   * Именно здесь лежат x-group / x-group-name для таблицы.
+   */
+  rootPropertySchema?: JsonSchema;
 };
 
 export type ParsedPydanticField = Omit<CreateAdminFieldInput, "tableId">;
@@ -38,8 +75,14 @@ export type ParsedPydanticTable = {
   dbName: string;
   label: string;
   description: string | null;
+  group: string | null;
+  groupName: string | null;
+  showInMenu: boolean;
+
   fields: ParsedPydanticField[];
 };
+
+const TABLE_GROUPS_BY_NAME = buildTableGroupsByName(SIDEBAR_ITEMS);
 
 export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
   const raw = input as Record<string, unknown>;
@@ -49,17 +92,19 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
 
   const schemas = extractSchemas(schema);
 
-  return Object.entries(schemas).map(([fallbackName, modelSchema]) => {
-    const tableName = toSnakeCase(fallbackName);
+  return schemas.map(({ tableName: rawTableName, modelSchema, rootPropertySchema }) => {
+    const tableName = toSnakeCase(rawTableName);
     const required = new Set(modelSchema.required ?? []);
+    const tableGroupMeta = getTableGroupMeta(tableName, rootPropertySchema);
 
     return {
       name: tableName,
       dbName: tableName,
-      label: modelSchema.description
-        ? modelSchema.description.split?.(".")?.[0]
-        : modelSchema.title || toTitle(fallbackName),
+      label: modelSchema.title || toTitle(rawTableName),
       description: modelSchema.description ?? null,
+      group: tableGroupMeta?.group ?? null,
+      groupName: tableGroupMeta?.groupName ?? null,
+      showInMenu: Boolean(tableGroupMeta),
       fields: Object.entries(modelSchema.properties ?? {}).map(
         ([fieldName, fieldSchema], index) => {
           const resolved = resolveNullable(fieldSchema);
@@ -91,7 +136,39 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
   });
 }
 
-function extractSchemas(schema: JsonSchema): Record<string, JsonSchema> {
+function buildTableGroupsByName(items: SidebarGroupItem[]) {
+  const groupsByName = new Map<string, TableGroupMeta>();
+
+  for (const group of items) {
+    for (const element of group.elements) {
+      groupsByName.set(normalizeTableName(element.id), {
+        group: group.id,
+        groupName: group.label,
+      });
+    }
+  }
+
+  return groupsByName;
+}
+
+function getTableGroupMeta(
+  tableName: string,
+  rootPropertySchema?: JsonSchema,
+): TableGroupMeta | null {
+  const group = rootPropertySchema?.["x-group"];
+  const groupName = rootPropertySchema?.["x-group-name"];
+
+  if (group && groupName) {
+    return {
+      group,
+      groupName,
+    };
+  }
+
+  return TABLE_GROUPS_BY_NAME.get(normalizeTableName(tableName)) ?? null;
+}
+
+function extractSchemas(schema: JsonSchema): ExtractedSchemaEntry[] {
   const defs =
     schema.components?.schemas ?? schema.$defs ?? schema.definitions ?? null;
 
@@ -108,23 +185,36 @@ function extractSchemas(schema: JsonSchema): Record<string, JsonSchema> {
         const targetSchema = defs[targetName];
         if (!targetSchema) return null;
 
-        return [propertyName, targetSchema] as const;
+        return {
+          tableName: propertyName,
+          modelSchema: targetSchema,
+          rootPropertySchema: propertySchema,
+        } satisfies ExtractedSchemaEntry;
       })
-      .filter(
-        (entry): entry is readonly [string, JsonSchema] => entry !== null,
-      );
+      .filter((entry): entry is ExtractedSchemaEntry => entry !== null);
 
     if (referencedEntries.length > 0) {
-      return Object.fromEntries(referencedEntries);
+      return referencedEntries;
     }
   }
 
   if (defs) {
-    return defs;
+    return Object.entries(defs).map(([fallbackName, modelSchema]) => ({
+      tableName: toSnakeCase(fallbackName),
+      modelSchema,
+    }));
   }
 
   if (schema.type === "object" && schema.properties) {
-    return { [schema.title || "ImportedModel"]: schema };
+    const tableName = toSnakeCase(schema.title || "ImportedModel");
+
+    return [
+      {
+        tableName,
+        modelSchema: schema,
+        rootPropertySchema: schema,
+      },
+    ];
   }
 
   throw new Error("Unsupported Pydantic schema format");
@@ -132,7 +222,29 @@ function extractSchemas(schema: JsonSchema): Record<string, JsonSchema> {
 
 function resolveNullable(schema: JsonSchema): JsonSchema {
   const variants = schema.anyOf ?? schema.oneOf;
-  return variants?.find((variant) => variant.type !== "null") ?? schema;
+  const resolvedVariant = variants?.find((variant) => variant.type !== "null");
+
+  if (!resolvedVariant) {
+    return schema;
+  }
+
+  /**
+   * В Pydantic JSON Schema default/title/description часто лежат на wrapper-узле
+   * с anyOf/oneOf, а type/items/format — внутри non-null варианта.
+   * Поэтому сохраняем тип из resolvedVariant, но переносим metadata с исходной схемы.
+   */
+  return {
+    ...resolvedVariant,
+    title: schema.title ?? resolvedVariant.title,
+    description: schema.description ?? resolvedVariant.description,
+    default: hasOwn(schema, "default")
+      ? schema.default
+      : resolvedVariant.default,
+    enum: schema.enum ?? resolvedVariant.enum,
+    format: schema.format ?? resolvedVariant.format,
+    items: schema.items ?? resolvedVariant.items,
+    "x-relation": schema["x-relation"] ?? resolvedVariant["x-relation"],
+  };
 }
 
 function getRelation(schema: JsonSchema): FieldRelationMeta | null {
@@ -143,7 +255,7 @@ function getRelation(schema: JsonSchema): FieldRelationMeta | null {
       targetTable: toSnakeCase(relation.to_table),
       targetKey: relation.link_key,
       displayField: relation.display_field,
-      additionalText: null,
+      additionalText: relation.additional_text ?? null,
     };
   }
 
@@ -181,7 +293,7 @@ function getOptions(schema: JsonSchema): FieldOption[] | null {
 }
 
 function getDefaultValue(schema: JsonSchema) {
-  return schema.default ?? null;
+  return hasOwn(schema, "default") ? schema.default : null;
 }
 
 function getInputType(schema: JsonSchema): FieldInputType {
@@ -192,7 +304,7 @@ function getInputType(schema: JsonSchema): FieldInputType {
   if (schema.format === "date") return "date";
   if (schema.format === "time") return "time";
   if (schema.type === "integer") return "integer";
-  if (schema.type === "float") return "float";
+  if (schema.type === "number") return "float";
   return "text";
 }
 
@@ -212,6 +324,10 @@ function getDbType(
   return "str";
 }
 
+function normalizeTableName(value: string) {
+  return toSnakeCase(value).trim().toLowerCase();
+}
+
 function toSnakeCase(value: string) {
   return value
     .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
@@ -223,4 +339,11 @@ function toTitle(value: string) {
   return value
     .replace(/_/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function hasOwn<T extends object, K extends PropertyKey>(
+  value: T,
+  key: K,
+): value is T & Record<K, unknown> {
+  return Object.prototype.hasOwnProperty.call(value, key);
 }

@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDeleteMany, useNavigation } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
-import type { ColumnDef } from "@tanstack/react-table";
+import {
+  getExpandedRowModel,
+  getGroupedRowModel,
+  type ColumnDef,
+  type ExpandedState,
+  type GroupingState,
+  type VisibilityState,
+} from "@tanstack/react-table";
 import { Edit, Pencil, Search, X } from "lucide-react";
 import {
   ADMIN_TABLE_SOURCE_LABELS,
-  ADMIN_TABLE_SOURCES,
   ADMIN_TABLE_STATUS_LABELS,
-  ADMIN_TABLE_STATUSES,
   type AdminTableMeta,
   type AdminTableSource,
   type AdminTableStatus,
@@ -29,7 +34,6 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { TableIcon } from "@/components/TableIcon";
 import { useTableSelection } from "@/hooks/use-table-selection";
 import {
-  getSelectionCheckboxState,
   SELECTION_COLUMN_SIZE,
   TableSelectionCheckBox,
 } from "@/components/TableSelectionCheckBox";
@@ -41,42 +45,17 @@ import {
   DataTableFilterDropdownText,
 } from "@/components/refine-ui/data-table/data-table-filter";
 import { useDebounce } from "@/hooks/use-debounce";
-
-const SOURCE_FILTER_OPTIONS = ADMIN_TABLE_SOURCES.map((source) => ({
-  label: ADMIN_TABLE_SOURCE_LABELS[source],
-  value: source,
-}));
-
-const STATUS_FILTER_OPTIONS = ADMIN_TABLE_STATUSES.map((status) => ({
-  label: ADMIN_TABLE_STATUS_LABELS[status],
-  value: status,
-}));
-
-function getSourceBadgeClassName(source: AdminTableSource) {
-  switch (source) {
-    case "pydantic":
-      return "bg-violet-100 text-violet-700";
-    case "manual":
-      return "bg-emerald-100 text-emerald-700";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-}
-
-function getStatusDotClassName(status: AdminTableStatus) {
-  switch (status) {
-    case "draft":
-      return "bg-slate-100 text-slate-700";
-    case "needs_setup":
-      return "bg-amber-100 text-amber-700";
-    case "partial":
-      return "bg-blue-100 text-blue-700";
-    case "ready":
-      return "bg-emerald-100 text-emerald-700";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-}
+import {
+  getLeafRowsSelectionState,
+  toggleLeafRowsSelected,
+} from "@/lib/tanstack-selection";
+import { getTableGroupLabel } from "./table-groups";
+import {
+  getSourceBadgeClassName,
+  getStatusDotClassName,
+  SOURCE_FILTER_OPTIONS,
+  STATUS_FILTER_OPTIONS,
+} from "./table-list-config";
 
 function SourceBadge({ source }: { source: AdminTableSource }) {
   const label = ADMIN_TABLE_SOURCE_LABELS[source];
@@ -110,22 +89,40 @@ function StatusInlineBadge({ status }: { status: AdminTableStatus }) {
   );
 }
 
+
 export function TableListPage() {
   const { edit } = useNavigation();
+
   const [previewTableId, setPreviewTableId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const debounceSearchQuery = useDebounce(searchQuery);
 
-  const searchFilters = searchQuery
-    ? [
-        {
-          field: "name",
-          operator: "contains" as const,
-          value: debounceSearchQuery,
-        },
-      ]
-    : [];
+  const [grouping, setGrouping] = useState<GroupingState>(["groupName"]);
+  const [expanded, setExpanded] = useState<ExpandedState>(true);
+
+  const columnVisibility = useMemo<VisibilityState>(
+    () => ({
+      groupName: false,
+    }),
+    [],
+  );
+
+  const debounceSearchQuery = useDebounce(searchQuery);
+  const normalizedSearchQuery = debounceSearchQuery.trim();
+
+  const searchFilters = useMemo(
+    () =>
+      normalizedSearchQuery
+        ? [
+            {
+              field: "name",
+              operator: "contains" as const,
+              value: normalizedSearchQuery,
+            },
+          ]
+        : [],
+    [normalizedSearchQuery],
+  );
 
   const {
     rowSelection,
@@ -142,6 +139,14 @@ export function TableListPage() {
   const columns = useMemo<ColumnDef<AdminTableMeta>[]>(
     () => [
       {
+        id: "groupName",
+        accessorFn: (row) => getTableGroupLabel(row),
+        header: "Группа",
+        enableGrouping: true,
+        enableSorting: false,
+        enableColumnFilter: false,
+      },
+      {
         id: "select",
         size: SELECTION_COLUMN_SIZE,
         minSize: SELECTION_COLUMN_SIZE,
@@ -149,14 +154,12 @@ export function TableListPage() {
         enableSorting: false,
         enableHiding: false,
         enableColumnFilter: false,
+        enableGrouping: false,
         header: ({ table }) => (
           <TableSelectionCheckBox
-            checked={getSelectionCheckboxState(
-              table.getIsAllPageRowsSelected(),
-              table.getIsSomePageRowsSelected(),
-            )}
+            checked={getLeafRowsSelectionState(table)}
             onCheckedChange={(value) => {
-              table.toggleAllPageRowsSelected(value === true);
+              toggleLeafRowsSelected(table, value === true);
             }}
             ariaLabel="Выбрать все строки"
           />
@@ -177,6 +180,7 @@ export function TableListPage() {
         id: "name",
         accessorKey: "name",
         minSize: 400,
+        enableGrouping: false,
         meta: {
           filterOperator: "contains",
         },
@@ -230,6 +234,7 @@ export function TableListPage() {
         id: "source",
         accessorKey: "source",
         minSize: 180,
+        enableGrouping: false,
         meta: {
           filterOperator: "in",
         },
@@ -251,6 +256,7 @@ export function TableListPage() {
         id: "status",
         accessorKey: "status",
         minSize: 180,
+        enableGrouping: false,
         meta: {
           filterOperator: "in",
         },
@@ -272,6 +278,7 @@ export function TableListPage() {
         id: "updatedAt",
         accessorKey: "updatedAt",
         minSize: 150,
+        enableGrouping: false,
         meta: {
           filterOperator: "contains",
         },
@@ -300,6 +307,7 @@ export function TableListPage() {
         enableSorting: false,
         enableHiding: false,
         enableColumnFilter: false,
+        enableGrouping: false,
         size: 60,
         minSize: 60,
         maxSize: 60,
@@ -327,46 +335,59 @@ export function TableListPage() {
     columns,
     getRowId: (row) => row.id,
     enableMultiRowSelection: true,
+
+    getGroupedRowModel: getGroupedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    groupedColumnMode: false,
+
     state: {
       rowSelection,
+      grouping,
+      expanded,
+      columnVisibility,
     },
+
     onRowSelectionChange: setRowSelection,
+    onGroupingChange: setGrouping,
+    onExpandedChange: setExpanded,
+
     refineCoreProps: {
       resource: "tables",
       pagination: {
-        mode: "server",
+        mode: "off",
       },
       filters: {
-        permanent: [...searchFilters],
+        permanent: searchFilters,
       },
     },
   });
 
   const reactTable = table.reactTable;
-  const rows = reactTable.getRowModel().rows;
+
+  const dataRows = reactTable.getCoreRowModel().rows;
 
   const selectedTables = useMemo(
-    () => rows.filter((row) => selectedTableIds.includes(row.id)),
-    [rows, selectedTableIds],
+    () => dataRows.filter((row) => selectedTableIds.includes(row.id)),
+    [dataRows, selectedTableIds],
   );
 
   const selectedTable =
-    rows.find((row) => row.id === previewTableId)?.original ??
-    rows[0]?.original ??
+    dataRows.find((row) => row.id === previewTableId)?.original ??
+    dataRows[0]?.original ??
     null;
 
   useEffect(() => {
-    if (rows.length === 0) {
+    if (dataRows.length === 0) {
       setPreviewTableId(null);
       return;
     }
 
-    if (previewTableId && rows.some((row) => row.id === previewTableId)) {
+    if (previewTableId && dataRows.some((row) => row.id === previewTableId)) {
       return;
     }
 
-    setPreviewTableId(rows[0].id);
-  }, [rows, previewTableId]);
+    setPreviewTableId(dataRows[0].id);
+  }, [dataRows, previewTableId]);
 
   function handleDeleteSelected() {
     if (!hasSelectedRows) return;
@@ -382,7 +403,7 @@ export function TableListPage() {
           setIsDeleteDialogOpen(false);
 
           if (previewTableId && selectedTableIds.includes(previewTableId)) {
-            const nextPreviewRow = rows.find(
+            const nextPreviewRow = dataRows.find(
               (row) => !selectedTableIds.includes(row.id),
             );
 
@@ -426,7 +447,7 @@ export function TableListPage() {
               className="pr-9 pl-9"
               placeholder="Поиск по названию таблицы..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
 
             {searchQuery && (
@@ -448,7 +469,10 @@ export function TableListPage() {
           />
         </div>
 
-        <DataTable table={table as any} />
+        <DataTable
+          table={table}
+          onRowClick={(row) => setPreviewTableId(row.id)}
+        />
       </ListView>
 
       <Card className="sticky top-24 h-fit">
@@ -484,6 +508,14 @@ export function TableListPage() {
                 <MetaRow
                   label="Описание"
                   value={selectedTable.description || "—"}
+                />
+                <MetaRow
+                  label="Группа"
+                  value={getTableGroupLabel(selectedTable)}
+                />
+                <MetaRow
+                  label="Показывать в меню"
+                  value={selectedTable.showInMenu ? "Да" : "Нет"}
                 />
                 <MetaRow
                   label="Поля"

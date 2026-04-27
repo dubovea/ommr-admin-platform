@@ -1,98 +1,133 @@
 # OMMR Admin Platform
 
-Прототип админ-панели для управления metadata таблиц и UX-настройками интерфейса.
+Админ-панель для управления metadata таблиц и UX-настройками интерфейса.
 
-Стек:
+## Стек
 
-- `apps/admin` — React + Vite + Refine headless
-- `apps/api` — Express + Drizzle ORM
-- `packages/shared` — общие типы и справочники
+- `apps/admin-frontend` — React + Vite + Refine + shadcn/ui
+- `apps/admin-backend` — Express + Drizzle ORM
+- `packages/shared` — общие типы, DTO, enum-значения, menu/group metadata
 - PostgreSQL через Docker Compose
 
+## Быстрый старт в разработке
 
-
-## Быстрый старт
-
-Проект настроен под **Yarn Modern 4.x** и использует нормальные workspace-зависимости без относительных `file:../../...`:
-
-```json
-"@ommr/shared": "workspace:*"
-```
-
-На Windows PowerShell:
-
-```powershell
+```bash
 corepack enable
-
-# Если сейчас `yarn -v` показывает 1.x, активируй Yarn Modern:
 corepack prepare yarn@4.14.1 --activate
 
-yarn -v
 yarn install
+cp apps/admin-backend/.env.example apps/admin-backend/.env
+cp apps/admin-frontend/.env.example apps/admin-frontend/.env
 
-docker compose up -d
-
-Copy-Item apps/api/.env.example apps/api/.env
-
+docker compose up -d postgres
 yarn db:push
-yarn seed
 yarn dev
+```
+
+По умолчанию:
+
+- Admin UI: http://localhost:5174
+- API: http://localhost:4000
+- Health: http://localhost:4000/health
+
+Frontend в dev использует `VITE_BACKEND_BASE_URL=/api/admin`, а Vite proxy отправляет `/api` на backend. Поэтому в разработке нет CORS-проблем. Для production можно оставить такой же относительный URL и проксировать `/api` через nginx.
+
+## Запуск всего проекта в Docker
+
+```bash
+cp .env.docker.example .env
+yarn docker:up
+```
+
+Или без Yarn:
+
+```bash
+docker compose up --build
 ```
 
 После запуска:
 
-- Admin UI: http://localhost:5173
-- API: http://localhost:4000
-- Health: http://localhost:4000/health
+- Frontend: http://localhost:8080
+- Backend: http://localhost:4000
+- Postgres: localhost:5433
 
-> В `.yarnrc.yml` включён `nodeLinker: node-modules`, чтобы проект был привычным для Vite/Node.js и не требовал настройки Plug'n'Play.
+Docker Compose поднимает:
 
-## Основная идея
+- `postgres`
+- `backend`
+- `frontend` на nginx, который проксирует `/api/*` в backend
 
-Pydantic импортирует только базовые свойства:
+Backend перед стартом выполняет `drizzle-kit push`, чтобы схема БД соответствовала текущему `src/db/schema.ts`.
 
-- название таблицы
-- имя в БД
-- список полей
-- базовые типы
-- required
+## ENV
 
-А в админке пользователь настраивает metadata и UX:
+### Backend
 
-- отображаемые названия таблиц и полей
-- типы полей
-- обязательность
-- редактируемость
-- сортировка
-- фильтрация
-- показывать в таблице
-- показывать в форме
-- связи для select-полей
+Файл: `apps/admin-backend/.env.example`
 
-## Доступные типы полей
-
-```ts
-"text"        // Текст
-"number"      // Числовой ввод
-"date"        // Дата
-"time"        // Время
-"datetime"    // Дата и время
-"select"      // Выпадающий список, одиночный выбор
-"multiselect" // Выпадающий список, мульти выбор
+```env
+HOST=0.0.0.0
+PORT=4000
+JSON_BODY_LIMIT=20mb
+CORS_ORIGIN=http://localhost:5174
+DATABASE_URL=postgres://ommr:ommr_password@localhost:5433/ommr_admin
 ```
+
+Для production можно заменить:
+
+- `DATABASE_URL` на реальную PostgreSQL строку;
+- `CORS_ORIGIN` на публичный домен frontend, например `https://admin.example.com`;
+- `PORT`/`HOST` на нужные значения инфраструктуры.
+
+### Frontend
+
+Файл: `apps/admin-frontend/.env.example`
+
+```env
+VITE_BACKEND_BASE_URL=/api/admin
+VITE_BACKEND_PROXY_TARGET=http://localhost:4000
+VITE_REFINE_DEVTOOLS=false
+REFINE_NO_TELEMETRY=true
+VITE_HOST=0.0.0.0
+VITE_PORT=5174
+```
+
+Рекомендация: оставлять `VITE_BACKEND_BASE_URL=/api/admin` и в dev/prod проксировать `/api` на backend. Если нужно ходить напрямую на backend, можно поставить полный URL, например `https://api.example.com/api/admin`, но тогда backend должен корректно отдавать CORS.
+
+## Shared types
+
+`packages/shared` — единый источник типов и справочников для frontend/backend:
+
+- `FIELD_INPUT_TYPES`, `FieldInputType`
+- `ADMIN_TABLE_STATUSES`, `AdminTableStatus`
+- `ADMIN_TABLE_SOURCES`, `AdminTableSource`
+- `ADMIN_TABLE_GROUPS`, `AdminTableGroup`, `ADMIN_TABLE_GROUP_OPTIONS`
+- `AdminTableMeta`, `AdminFieldMeta`
+- `CreateAdminTableInput`, `UpdateAdminTableInput`
+- `CreateAdminFieldInput`, `UpdateAdminFieldInput`
+- `FieldRelationMeta`, `FieldRelationInput`
+- `MetadataExport`, `MetadataExportTable`, `MetadataExportMenuGroup`
+
+Frontend использует shared для UI, фильтров, dropdown-ов и metadata export. Backend использует те же значения в Drizzle enum и Zod validation.
 
 ## Скрипты
 
 ```bash
-npm run dev          # admin + api
-npm run dev:admin-frontend    # только frontend
-npm run dev:admin-backend      # только backend
+yarn dev                    # frontend + backend
+yarn dev:admin-frontend     # только frontend
+yarn dev:admin-backend      # только backend
 
-npm run db:push      # применить схему без генерации миграций
-npm run db:generate  # сгенерировать миграции
-npm run db:migrate   # применить миграции
-npm run db:studio    # Drizzle Studio
-npm run seed         # демо-данные
+yarn build                  # shared typecheck + backend build + frontend build
+yarn typecheck              # typecheck всех workspace
+
+yarn db:push                # применить схему через drizzle-kit push
+yarn db:generate            # сгенерировать миграции
+yarn db:migrate             # применить миграции
+yarn db:studio              # Drizzle Studio
+
+yarn docker:up              # docker compose up --build
+yarn docker:down            # docker compose down
+yarn docker:logs            # docker compose logs -f
 ```
 
 ## Структура
@@ -100,119 +135,28 @@ npm run seed         # демо-данные
 ```txt
 ommr-admin-platform
 ├── apps
-│   ├── admin
-│   └── api
+│   ├── admin-backend
+│   └── admin-frontend
 ├── packages
 │   └── shared
 ├── docker-compose.yml
+├── .env.docker.example
 ├── package.json
 └── tsconfig.base.json
 ```
 
+## Metadata export
 
-## Роль `packages/shared`
+`GET /api/admin/metadata` теперь возвращает объект:
 
-`packages/shared` — единый источник для общих metadata-типов и enum-значений:
-
-- `FIELD_INPUT_TYPES`
-- `ADMIN_TABLE_STATUSES`
-- `ADMIN_TABLE_SOURCES`
-- `RELATION_TYPES`
-- `AdminTableMeta`
-- `AdminFieldMeta`
-- `FieldRelationMeta`
-
-Frontend использует эти типы для UI, dropdown-ов и подписей.
-
-Backend использует эти же значения в Zod validation и Drizzle enum-ах.
-
-Drizzle остаётся DB-схемой и описывает только физическую структуру PostgreSQL: таблицы, колонки, типы колонок, связи и defaults.
-
-
-## Что уже сделано
-
-- базовая структура monorepo
-- PostgreSQL + Drizzle schema
-- Express CRUD API для таблиц и полей
-- seed-данные: users, orders, products, invoices, categories
-- Refine подключен как headless framework
-- кастомный UI-прототип:
-  - список таблиц
-  - предпросмотр таблицы
-  - экран редактирования
-  - настройка полей
-  - dropdown выбора типа поля
-
-
-## Финальная организация API
-
-Express entrypoint теперь отвечает только за middleware и подключение роутеров:
-
-```ts
-app.use("/api/admin", adminRouter);
+```json
+{
+  "tables": [],
+  "menu": []
+}
 ```
 
-Роутинг разнесён по файлам:
+- `tables` — описание таблиц и полей;
+- `menu` — готовая структура sidebar, собранная по `group/groupName/showInMenu`.
 
-```txt
-apps/api/src/routes/admin/index.ts
-apps/api/src/routes/admin/tables.routes.ts
-apps/api/src/routes/admin/fields.routes.ts
-```
-
-Ошибки обрабатываются через общий middleware:
-
-```txt
-apps/api/src/middlewares/error-handler.ts
-```
-
-Асинхронные обработчики завернуты в:
-
-```txt
-apps/api/src/lib/async-handler.ts
-```
-
-
-
-## Frontend UI
-
-Frontend переведён на связку:
-
-- `@refinedev/core`
-- `@refinedev/react-router`
-- `@refinedev/react-table`
-- `shadcn/ui`
-- Refine shadcn registry-style components: `ListView`, `EditView`, `DataTable`
-
-Компоненты UI лежат в `apps/admin/src/components/ui`, как это делает shadcn/ui registry.
-Refine-обёртки лежат в `apps/admin/src/components/refine-ui`.
-
-Для добавления новых компонентов можно использовать:
-
-```bash
-yarn dlx shadcn@latest add button card input select table tabs switch checkbox dropdown-menu textarea separator sonner
-yarn dlx shadcn@latest add https://ui.refine.dev/r/views.json
-```
-
-
-## Что можно добавить дальше
-
-- импорт реальной Pydantic JSON Schema
-- генерация metadata из OpenAPI/JSON Schema
-- сохранение порядка полей
-- relation builder
-- enum options editor
-- preview формы/таблицы
-- авторизация
-
-## Refine Devtools
-
-Devtools по умолчанию выключены, чтобы не было ошибки WebSocket `ws://localhost:5001`.
-
-Чтобы включить Devtools, создай `apps/admin/.env`:
-
-```env
-VITE_REFINE_DEVTOOLS=true
-```
-
-И запусти Devtools-сервер Refine отдельно, если он нужен.
+`showInMenu=false` оставляет таблицу в `tables`, но исключает её из `menu`.

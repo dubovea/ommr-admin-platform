@@ -1,3 +1,20 @@
+export type AdminApiPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type AdminApiListResponse<T = unknown> = {
+  data?: T[];
+  total?: number;
+  pagination?: AdminApiPagination;
+};
+
+export type AdminApiOneResponse<T = unknown> = {
+  data?: T;
+};
+
 export const FIELD_INPUT_TYPES = [
   "text",
   "textarea",
@@ -52,6 +69,20 @@ export const ADMIN_TABLE_SOURCE_LABELS: Record<AdminTableSource, string> = {
   pydantic: "Pydantic",
   manual: "Ручной",
 };
+
+export const ADMIN_TABLE_GROUPS = ["master_tables", "detail_tables"] as const;
+
+export type AdminTableGroup = (typeof ADMIN_TABLE_GROUPS)[number];
+
+export const ADMIN_TABLE_GROUP_LABELS: Record<AdminTableGroup, string> = {
+  master_tables: "Мастер-таблицы",
+  detail_tables: "Детальные таблицы",
+};
+
+export const ADMIN_TABLE_GROUP_OPTIONS = ADMIN_TABLE_GROUPS.map((group) => ({
+  id: group,
+  label: ADMIN_TABLE_GROUP_LABELS[group],
+}));
 
 export type FieldOption = {
   label: string;
@@ -163,12 +194,16 @@ export type AdminFieldMeta = {
 export type AdminTableMeta = {
   id: string;
   name: string;
+  group: string | null;
+  groupName: string | null;
+
   label: string;
   description?: string | null;
   icon?: string | null;
   status: AdminTableStatus;
   source: AdminTableSource;
 
+  showInMenu: boolean;
   canList: boolean;
   canCreate: boolean;
   canEdit: boolean;
@@ -191,16 +226,30 @@ export type AdminTableMeta = {
 };
 
 export type CreateAdminTableInput = Pick<AdminTableMeta, "name" | "label"> &
-  Partial<Pick<AdminTableMeta, "description" | "status" | "source" | "icon">>;
+  Partial<
+    Pick<
+      AdminTableMeta,
+      | "group"
+      | "groupName"
+      | "description"
+      | "status"
+      | "source"
+      | "icon"
+      | "showInMenu"
+    >
+  >;
 
 export type UpdateAdminTableInput = Partial<
   Pick<
     AdminTableMeta,
     | "name"
+    | "group"
+    | "groupName"
     | "label"
     | "description"
     | "status"
     | "icon"
+    | "showInMenu"
     | "canList"
     | "canCreate"
     | "canEdit"
@@ -292,3 +341,67 @@ export type NormalizedUpdateAdminFieldPayload = Omit<
   relation?: FieldRelationMeta | null;
   relationTargetTableId?: string | null;
 };
+
+export type MetadataExportRelation = Omit<FieldRelationMeta, "targetTableId"> | null;
+
+export type MetadataExportField = Pick<
+  AdminFieldMeta,
+  "name" | "label" | "inputType" | "visible" | "editable" | "required"
+> & {
+  relation: MetadataExportRelation;
+};
+
+export type MetadataExportTable = Pick<
+  AdminTableMeta,
+  "name" | "label" | "group" | "groupName" | "showInMenu"
+> & {
+  fields: MetadataExportField[];
+};
+
+export type MetadataExportMenuItem = {
+  id: string;
+  label: string;
+};
+
+export type MetadataExportMenuGroup = {
+  id: string;
+  label: string;
+  elements: MetadataExportMenuItem[];
+};
+
+export type MetadataExport = {
+  tables: MetadataExportTable[];
+  menu: MetadataExportMenuGroup[];
+};
+
+export const SIDEBAR_ITEMS = [
+  {
+    id: "master_tables",
+    label: "Мастер-таблицы",
+    elements: [
+      { id: "cargoes", label: "Грузы" },
+      { id: "tracks", label: "Пути" },
+      { id: "tracks_links", label: "ПутиСвязи" },
+      { id: "locos", label: "Локомотивы" },
+      { id: "locos_manevours", label: "МаневровыеРайоны" },
+      { id: "load_racks", label: "Эстакады" },
+      { id: "load_rack_variants", label: "ЭстадыВарианты" },
+      { id: "wagon_types", label: "ТипыВагонов" },
+      { id: "operation_time", label: "ВремяОпераций" },
+    ],
+  },
+  {
+    id: "detail_tables",
+    label: "Детальные таблицы",
+    elements: [
+      { id: "shipments", label: "Отгрузка" },
+      { id: "locos_inits", label: "ЛокомотивыНачало" },
+      { id: "wagons_inits", label: "ВагоныНачало" },
+      { id: "wagons_arrival", label: "ВагоныПоступление" },
+      { id: "locos_intransit", label: "ЛокомотивыВПути" },
+      { id: "load_racks_process", label: "ЭстакадыНалив" },
+      { id: "resource_unavailable", label: "РесурсНедоступность" },
+      { id: "locos_shift_change", label: "ЛокомотивыСмена" },
+    ],
+  },
+];

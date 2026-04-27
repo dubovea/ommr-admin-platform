@@ -1,9 +1,10 @@
 import { useApiUrl } from "@refinedev/core";
+import type { MetadataExport } from "@ommr/shared";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 export type ExportMetadataJsonResponse = {
-  data?: unknown;
+  data?: MetadataExport;
 };
 
 function getFilenameFromContentDisposition(header: string | null) {

@@ -7,7 +7,7 @@ const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL is required. Copy apps/api/.env.example to apps/api/.env",
+    "DATABASE_URL is required. Copy apps/admin-backend/.env.example to apps/admin-backend/.env",
   );
 }
 

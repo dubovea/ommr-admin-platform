@@ -76,13 +76,87 @@ export function useTableEditPage(tableId?: string) {
     },
   });
 
+  const { mutate: updateTable, mutation: updateTableMutation } =
+    useUpdate<AdminTableMeta>();
+
   const { mutate: updateField, mutation: updateFieldMutation } =
     useUpdate<AdminFieldMeta>();
 
-  const isFieldUpdating = updateFieldMutation.isPending;
+  const { mutate: deleteFields, mutation: deleteFieldsMutation } =
+    useDeleteMany<AdminFieldMeta>();
 
-  const { mutate: deleteFields, mutation } = useDeleteMany<AdminFieldMeta>();
-  const isDeletePending = mutation?.isPending;
+  const isTableUpdating = updateTableMutation.isPending;
+  const isFieldUpdating = updateFieldMutation.isPending;
+  const isDeletePending = deleteFieldsMutation?.isPending;
+
+  const invalidateTables = useCallback(() => {
+    void invalidate({
+      resource: "tables",
+      invalidates: ["list", "detail"],
+    });
+  }, [invalidate]);
+
+  const invalidateFieldsAndTables = useCallback(() => {
+    void invalidate({
+      resource: "fields",
+      invalidates: ["list"],
+    });
+
+    void invalidate({
+      resource: "tables",
+      invalidates: ["list", "detail"],
+    });
+  }, [invalidate]);
+
+  const patchTable = useCallback(
+    (payload: UpdateAdminTableInput) => {
+      if (!tableId) {
+        return Promise.resolve();
+      }
+
+      return new Promise<void>((resolve, reject) => {
+        updateTable(
+          {
+            resource: "tables",
+            id: tableId,
+            values: payload,
+            mutationMode: "optimistic",
+          },
+          {
+            onSuccess: () => {
+              invalidateTables();
+              resolve();
+            },
+            onError: reject,
+          },
+        );
+      });
+    },
+    [invalidateTables, tableId, updateTable],
+  );
+
+  const patchField = useCallback(
+    (fieldId: string, payload: UpdateAdminFieldInput) => {
+      return new Promise<void>((resolve, reject) => {
+        updateField(
+          {
+            resource: "fields",
+            id: fieldId,
+            values: payload,
+            mutationMode: "optimistic",
+          },
+          {
+            onSuccess: () => {
+              invalidateFieldsAndTables();
+              resolve();
+            },
+            onError: reject,
+          },
+        );
+      });
+    },
+    [invalidateFieldsAndTables, updateField],
+  );
 
   const openDeleteFieldsDialog = useCallback((ids: string[]) => {
     const uniqueIds = [...new Set(ids.filter(Boolean))];
@@ -90,7 +164,6 @@ export function useTableEditPage(tableId?: string) {
     if (uniqueIds.length === 0) {
       return;
     }
-
     setFieldIdsToDelete(uniqueIds);
     setIsDeleteDialogOpen(true);
   }, []);
@@ -176,19 +249,64 @@ export function useTableEditPage(tableId?: string) {
         id: "visible",
         accessorKey: "visible",
         header: "Видимое",
-        cell: ({ row }) => <Checkbox checked={row.original.visible} />,
+        cell: ({ row }) => (
+          <div
+            className="flex justify-center"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Checkbox
+              checked={Boolean(row.original.visible)}
+              disabled={isFieldUpdating}
+              onCheckedChange={(checked) => {
+                void patchField(row.original.id, {
+                  visible: checked === true,
+                }).catch(() => undefined);
+              }}
+            />
+          </div>
+        ),
       },
       {
         id: "required",
         accessorKey: "required",
         header: "Обязательное",
-        cell: ({ row }) => <Checkbox checked={row.original.required} />,
+        cell: ({ row }) => (
+          <div
+            className="flex justify-center"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Checkbox
+              checked={Boolean(row.original.required)}
+              disabled={isFieldUpdating}
+              onCheckedChange={(checked) => {
+                void patchField(row.original.id, {
+                  required: checked === true,
+                }).catch(() => undefined);
+              }}
+            />
+          </div>
+        ),
       },
       {
         id: "editable",
         accessorKey: "editable",
         header: "Редактируемое",
-        cell: ({ row }) => <Checkbox checked={row.original.editable} />,
+        cell: ({ row }) => (
+          <div
+            className="flex justify-center"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Checkbox
+              checked={Boolean(row.original.editable)}
+              disabled={isFieldUpdating}
+              onCheckedChange={(checked) => {
+                void patchField(row.original.id, {
+                  editable: checked === true,
+                }).catch(() => undefined);
+              }}
+            />
+          </div>
+        ),
       },
       {
         id: "actions",
@@ -219,7 +337,7 @@ export function useTableEditPage(tableId?: string) {
         ),
       },
     ],
-    [activeFieldId, openDeleteFieldsDialog],
+    [activeFieldId, isFieldUpdating, openDeleteFieldsDialog, patchField],
   );
 
   const fieldsTable = useTable<AdminFieldMeta>({
@@ -233,7 +351,9 @@ export function useTableEditPage(tableId?: string) {
     refineCoreProps: {
       resource: "fields",
       filters: {
-        permanent: [{ field: "tableId", operator: "eq", value: tableId }],
+        permanent: tableId
+          ? [{ field: "tableId", operator: "eq", value: tableId }]
+          : [],
       },
       queryOptions: {
         enabled: Boolean(tableId),
@@ -253,7 +373,6 @@ export function useTableEditPage(tableId?: string) {
     () => fieldRows.filter((row) => fieldIdsToDelete.includes(row.id)),
     [fieldRows, fieldIdsToDelete],
   );
-
   useEffect(() => {
     if (fieldRows.length === 0) {
       setActiveFieldId(null);
@@ -273,6 +392,11 @@ export function useTableEditPage(tableId?: string) {
       label: values.label,
       name: values.name,
       description: values.description,
+
+      group: values.group ?? null,
+      groupName: values.groupName ?? null,
+      showInMenu: values.showInMenu ?? true,
+
       canList: values.canList,
       canCreate: values.canCreate,
       canEdit: values.canEdit,
@@ -287,34 +411,8 @@ export function useTableEditPage(tableId?: string) {
     if (!selectedField) {
       return Promise.resolve();
     }
-    return new Promise<void>((resolve, reject) => {
-      updateField(
-        {
-          resource: "fields",
-          id: selectedField.id,
-          values: payload,
-          mutationMode: "optimistic",
-        },
-        {
-          onSuccess: () => {
-            invalidate({
-              resource: "fields",
-              invalidates: ["list"],
-            });
 
-            invalidate({
-              resource: "tables",
-              invalidates: ["list", "detail"],
-            });
-
-            resolve();
-          },
-          onError: (error) => {
-            reject(error);
-          },
-        },
-      );
-    });
+    return patchField(selectedField.id, payload);
   }
 
   const confirmDeleteFields = useCallback(() => {
@@ -341,16 +439,7 @@ export function useTableEditPage(tableId?: string) {
 
           setFieldIdsToDelete([]);
           setIsDeleteDialogOpen(false);
-
-          invalidate({
-            resource: "fields",
-            invalidates: ["list"],
-          });
-
-          invalidate({
-            resource: "tables",
-            invalidates: ["list", "detail"],
-          });
+          invalidateFieldsAndTables();
         },
       },
     );
@@ -359,7 +448,7 @@ export function useTableEditPage(tableId?: string) {
     deleteFields,
     fieldIdsToDelete,
     fieldRows,
-    invalidate,
+    invalidateFieldsAndTables,
     removeSelectedFieldIds,
   ]);
 
@@ -373,6 +462,9 @@ export function useTableEditPage(tableId?: string) {
 
     tableForm,
     saveTable,
+
+    patchTable,
+    isTableUpdating,
 
     fieldsTable,
     fieldRows,
@@ -392,6 +484,8 @@ export function useTableEditPage(tableId?: string) {
     fieldsToDelete,
     openDeleteFieldsDialog,
     confirmDeleteFields,
+
+    patchField,
     patchSelectedField,
     isFieldUpdating,
   };
