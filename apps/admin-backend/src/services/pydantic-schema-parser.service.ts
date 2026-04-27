@@ -22,6 +22,13 @@ type TableGroupMeta = {
   groupName: string;
 };
 
+type TableRootProperties = {
+  label: string | null;
+  group: string | null;
+  groupName: string | null;
+  showInMenu: boolean;
+};
+
 type JsonSchemaRelation = {
   to_table?: string;
   link_key?: string;
@@ -64,7 +71,7 @@ type ExtractedSchemaEntry = {
 
   /**
    * Root-свойство из основной модели.
-   * Именно здесь лежат x-group / x-group-name для таблицы.
+   * Именно здесь лежат title / x-group / x-group-name для таблицы.
    */
   rootPropertySchema?: JsonSchema;
 };
@@ -79,7 +86,6 @@ export type ParsedPydanticTable = {
   group: string | null;
   groupName: string | null;
   showInMenu: boolean;
-
   fields: ParsedPydanticField[];
 };
 
@@ -87,54 +93,79 @@ const TABLE_GROUPS_BY_NAME = buildTableGroupsByName(SIDEBAR_ITEMS);
 
 export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
   const raw = input as Record<string, unknown>;
+
   const schema = (
     raw?.schema && typeof raw.schema === "object" ? raw.schema : input
   ) as JsonSchema;
 
   const schemas = extractSchemas(schema);
 
-  return schemas.map(({ tableName: rawTableName, modelSchema, rootPropertySchema }) => {
-    const tableName = toSnakeCase(rawTableName);
-    const required = new Set(modelSchema.required ?? []);
-    const tableGroupMeta = getTableGroupMeta(tableName, rootPropertySchema);
+  return schemas.map(
+    ({ tableName: rawTableName, modelSchema, rootPropertySchema }) => {
+      const tableName = toSnakeCase(rawTableName);
+      const required = new Set(modelSchema.required ?? []);
+      const tableRootProperties = getTableRootProperties(
+        tableName,
+        rootPropertySchema,
+      );
 
-    return {
-      name: tableName,
-      dbName: tableName,
-      label: modelSchema.title || toTitle(rawTableName),
-      description: modelSchema.description ?? null,
-      group: tableGroupMeta?.group ?? null,
-      groupName: tableGroupMeta?.groupName ?? null,
-      showInMenu: Boolean(tableGroupMeta),
-      fields: Object.entries(modelSchema.properties ?? {}).map(
-        ([fieldName, fieldSchema], index) => {
-          const resolved = resolveNullable(fieldSchema);
-          const relation = getRelation(resolved);
-          const options = getOptions(resolved);
+      return {
+        name: tableName,
+        dbName: tableName,
 
-          return {
-            name: fieldName,
-            label: toTitle(fieldName),
-            dbType: getDbType(resolved, relation),
-            inputType: relation ? "multiselect" : getInputType(resolved),
-            required: required.has(fieldName),
-            editable: fieldName !== "id" && !fieldName.endsWith("_at"),
-            sortable: true,
-            filterable: true,
-            visible: fieldName !== "id" && !fieldName.endsWith("_at"),
-            group: null,
-            defaultValue: getDefaultValue(resolved),
-            options,
-            validation: DEFAULT_FIELD_VALIDATION,
-            placeholder: null,
-            helpText: resolved.description ?? null,
-            relation,
-            sortOrder: index + 1,
-          } satisfies ParsedPydanticField;
-        },
-      ),
-    };
-  });
+        /**
+         * Приоритет label:
+         * 1. root properties[tableName].title — например "ЭстакадыВарианты"
+         * 2. $defs[Model].title — например "LoadRackVariantsData"
+         * 3. fallback из имени root-свойства — например "Load Rack Variants"
+         */
+        label:
+          tableRootProperties.label ??
+          getSchemaTitle(modelSchema) ??
+          toTitle(rawTableName),
+
+        description: modelSchema.description ?? null,
+
+        group: tableRootProperties.group,
+        groupName: tableRootProperties.groupName,
+        showInMenu: tableRootProperties.showInMenu,
+
+        fields: Object.entries(modelSchema.properties ?? {}).map(
+          ([fieldName, fieldSchema], index) => {
+            const resolved = resolveNullable(fieldSchema);
+            const relation = getRelation(resolved);
+            const options = getOptions(resolved);
+
+            return {
+              name: fieldName,
+              label: toTitle(fieldName),
+              dbType: getDbType(resolved, relation),
+              inputType: relation ? "multiselect" : getInputType(resolved),
+
+              required: required.has(fieldName),
+              editable: fieldName !== "id" && !fieldName.endsWith("_at"),
+              sortable: true,
+              filterable: true,
+              visible: fieldName !== "id" && !fieldName.endsWith("_at"),
+
+              group: null,
+
+              defaultValue: getDefaultValue(resolved),
+              options,
+              validation: DEFAULT_FIELD_VALIDATION,
+
+              placeholder: null,
+              helpText: resolved.description ?? null,
+
+              relation,
+
+              sortOrder: index + 1,
+            } satisfies ParsedPydanticField;
+          },
+        ),
+      };
+    },
+  );
 }
 
 function buildTableGroupsByName(items: SidebarGroupItem[]) {
@@ -152,21 +183,32 @@ function buildTableGroupsByName(items: SidebarGroupItem[]) {
   return groupsByName;
 }
 
-function getTableGroupMeta(
+function getTableRootProperties(
   tableName: string,
   rootPropertySchema?: JsonSchema,
-): TableGroupMeta | null {
-  const group = rootPropertySchema?.["x-group"];
-  const groupName = rootPropertySchema?.["x-group-name"];
+): TableRootProperties {
+  const label = getSchemaTitle(rootPropertySchema);
 
-  if (group && groupName) {
-    return {
-      group,
-      groupName,
-    };
-  }
+  const fallbackGroupMeta = TABLE_GROUPS_BY_NAME.get(
+    normalizeTableName(tableName),
+  );
 
-  return TABLE_GROUPS_BY_NAME.get(normalizeTableName(tableName)) ?? null;
+  const group =
+    getNonEmptyString(rootPropertySchema?.["x-group"]) ??
+    fallbackGroupMeta?.group ??
+    null;
+
+  const groupName =
+    getNonEmptyString(rootPropertySchema?.["x-group-name"]) ??
+    fallbackGroupMeta?.groupName ??
+    null;
+
+  return {
+    label,
+    group,
+    groupName,
+    showInMenu: Boolean(group && groupName),
+  };
 }
 
 function extractSchemas(schema: JsonSchema): ExtractedSchemaEntry[] {
@@ -341,6 +383,7 @@ function getInputType(schema: JsonSchema): FieldInputType {
   if (schema.format === "time") return "time";
   if (schema.type === "integer") return "integer";
   if (schema.type === "number") return "float";
+
   return "text";
 }
 
@@ -357,7 +400,22 @@ function getDbType(
   if (schema.type === "integer") return "int";
   if (schema.type === "number") return "decimal";
   if (schema.type === "boolean") return "boolean";
+
   return "str";
+}
+
+function getSchemaTitle(schema?: JsonSchema): string | null {
+  return getNonEmptyString(schema?.title);
+}
+
+function getNonEmptyString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function normalizeTableName(value: string) {

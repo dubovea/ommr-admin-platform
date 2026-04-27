@@ -14,20 +14,6 @@ services:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required. Create root .env file.}
     ports:
       - "${BACKEND_PORT:-4000}:4000"
-    command: >
-      /bin/sh -c '
-        echo "";
-        echo "✅ Admin backend started:";
-        echo "   http://localhost:$${BACKEND_PUBLIC_PORT}";
-        echo "";
-        echo "🏥 Health check:";
-        echo "   http://localhost:$${BACKEND_PUBLIC_PORT}/health";
-        echo "";
-        echo "🔌 Admin API:";
-        echo "   http://localhost:$${BACKEND_PUBLIC_PORT}/api/admin";
-        echo "";
-        yarn workspace @ommr/admin-backend start;
-      '
 
   admin-frontend:
     build:
@@ -47,14 +33,3 @@ services:
       - "${FRONTEND_PORT:-8080}:80"
     depends_on:
       - admin-backend
-    command: >
-      /bin/sh -c '
-        echo "";
-        echo "✅ Admin frontend started:";
-        echo "   http://localhost:$${FRONTEND_PUBLIC_PORT}";
-        echo "";
-        echo "🔁 API proxy:";
-        echo "   /api -> $${API_PROXY_PASS}";
-        echo "";
-        nginx -g "daemon off;";
-      '

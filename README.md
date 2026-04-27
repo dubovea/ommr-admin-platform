@@ -47,9 +47,8 @@ docker compose up --build
 
 После запуска:
 
-- Frontend: http://localhost:8080
+- Frontend: http://localhost:5174
 - Backend: http://localhost:4000
-- Postgres: localhost:5433
 
 Docker Compose поднимает:
 
