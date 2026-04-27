@@ -7,17 +7,45 @@ import { asyncHandler } from "../../lib/async-handler.js";
 import { createFieldSchema, updateFieldSchema } from "../../validation.js";
 import { getRequiredStringForEq, parseIdsQuery } from "../../lib/utils.js";
 import {
+  buildEqFilter,
+  buildWhereFromCrudFilters,
+  getLogicalFilterValue,
+  parseFiltersQuery,
+  type FilterColumnMap,
+} from "../../lib/admin-filter.utils.js";
+import {
   normalizeFieldCreatePayloadForDb,
   normalizeFieldUpdatePayloadForDb,
 } from "../../lib/admin-field-relation.utils.js";
 
 export const fieldsRouter = Router();
 
+const fieldFilterColumns: FilterColumnMap = {
+  id: adminFields.id,
+  tableId: adminFields.tableId,
+  name: adminFields.name,
+  label: adminFields.label,
+  dbType: adminFields.dbType,
+  inputType: adminFields.inputType,
+  required: adminFields.required,
+  editable: adminFields.editable,
+  sortable: adminFields.sortable,
+  filterable: adminFields.filterable,
+  visible: adminFields.visible,
+  group: adminFields.group,
+  relationTargetTableId: adminFields.relationTargetTableId,
+  sortOrder: adminFields.sortOrder,
+  createdAt: adminFields.createdAt,
+  updatedAt: adminFields.updatedAt,
+};
+
 fieldsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const method = "GET /fields";
-    const tableIdQuery = req.query.tableId;
+    const filters = parseFiltersQuery(req.query.filters);
+    const tableIdQuery =
+      req.query.tableId ?? getLogicalFilterValue(filters, "tableId");
 
     if (tableIdQuery !== undefined) {
       const tableId = getRequiredStringForEq({
@@ -31,32 +59,23 @@ fieldsRouter.get(
         return;
       }
 
-      const fields = await db
-        .select()
-        .from(adminFields)
-        .where(eq(adminFields.tableId, tableId))
-        .orderBy(
-          asc(adminFields.group),
-          asc(adminFields.sortOrder),
-          asc(adminFields.name),
-        );
-
-      res.json({
-        data: fields,
-        total: fields.length,
-      });
-
-      return;
+      if (req.query.tableId !== undefined) {
+        filters.push(buildEqFilter("tableId", tableId));
+      }
     }
 
-    const fields = await db
-      .select()
-      .from(adminFields)
-      .orderBy(
-        asc(adminFields.group),
-        asc(adminFields.sortOrder),
-        asc(adminFields.name),
-      );
+    const where = buildWhereFromCrudFilters(filters, fieldFilterColumns);
+    let fieldsQuery = db.select().from(adminFields).$dynamic();
+
+    if (where) {
+      fieldsQuery = fieldsQuery.where(where);
+    }
+
+    const fields = await fieldsQuery.orderBy(
+      asc(adminFields.group),
+      asc(adminFields.sortOrder),
+      asc(adminFields.name),
+    );
 
     res.json({
       data: fields,

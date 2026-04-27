@@ -36,9 +36,8 @@ function getRelationTableNames(response: RelationGraphResponse | null) {
   if (!response) {
     return new Set<string>();
   }
-
   return new Set(
-    response.relations.flatMap((relation) => [
+    response?.data?.relations.flatMap((relation) => [
       relation.sourceTable.name,
       relation.targetTable.name,
     ]),
@@ -53,7 +52,7 @@ function getTableRelationCount(
     return 0;
   }
 
-  return response.relations.filter(
+  return response?.data?.relations.filter(
     (relation) =>
       relation.sourceTable.name === table.name ||
       relation.targetTable.name === table.name,
@@ -117,7 +116,7 @@ export function RelationsGraphPage() {
 
     const normalizedSearch = search.trim().toLowerCase();
 
-    return response.tables
+    return response?.data?.tables
       .filter((table) => relationTableNames.has(table.name))
       .filter((table) => {
         if (!normalizedSearch) {
@@ -188,7 +187,7 @@ export function RelationsGraphPage() {
     );
   }
 
-  if (!response || response.relations.length === 0) {
+  if (!response || response?.data?.relations.length === 0) {
     return (
       <Card>
         <CardContent className="flex min-h-[680px] items-center justify-center text-sm text-muted-foreground">

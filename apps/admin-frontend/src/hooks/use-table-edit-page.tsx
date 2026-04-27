@@ -43,6 +43,9 @@ export function useTableEditPage(tableId?: string) {
 
   const { query: tablesListData } = useList<AdminTableMeta>({
     resource: "tables",
+    pagination: {
+      mode: "off",
+    },
     meta: {
       includeFields: true,
     },
@@ -170,6 +173,12 @@ export function useTableEditPage(tableId?: string) {
         cell: ({ row }) => FIELD_INPUT_TYPE_LABELS[row.original.inputType],
       },
       {
+        id: "visible",
+        accessorKey: "visible",
+        header: "Видимое",
+        cell: ({ row }) => <Checkbox checked={row.original.visible} />,
+      },
+      {
         id: "required",
         accessorKey: "required",
         header: "Обязательное",
@@ -180,12 +189,6 @@ export function useTableEditPage(tableId?: string) {
         accessorKey: "editable",
         header: "Редактируемое",
         cell: ({ row }) => <Checkbox checked={row.original.editable} />,
-      },
-      {
-        id: "visible",
-        accessorKey: "visible",
-        header: "Видимое",
-        cell: ({ row }) => <Checkbox checked={row.original.visible} />,
       },
       {
         id: "actions",

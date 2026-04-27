@@ -1,47 +1,22 @@
 import { Router } from "express";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  gt,
-  gte,
-  ilike,
-  inArray,
-  isNotNull,
-  isNull,
-  like,
-  lt,
-  lte,
-  ne,
-  not,
-  or,
-  sql,
-  type AnyColumn,
-  type SQL,
-} from "drizzle-orm";
+import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
 import { createTableSchema, updateTableSchema } from "../../validation.js";
 import { getRequiredStringForEq, parseIdsQuery } from "../../lib/utils.js";
+import {
+  buildMultiColumnFilterCondition,
+  buildWhereFromCrudFilters,
+  parseFiltersQuery,
+  parsePositiveInt,
+  type FilterColumnMap,
+} from "../../lib/admin-filter.utils.js";
 
 export const tablesRouter = Router();
 
-type ApiCrudFilter =
-  | {
-      field: string;
-      operator: string;
-      value?: unknown;
-    }
-  | {
-      key?: string;
-      operator: "or" | "and";
-      value: ApiCrudFilter[];
-    };
-
-const tableFilterColumns: Record<string, AnyColumn> = {
+const tableFilterColumns: FilterColumnMap = {
   id: adminTables.id,
   name: adminTables.name,
   label: adminTables.label,
@@ -58,277 +33,17 @@ const tableFilterColumns: Record<string, AnyColumn> = {
   updatedAt: adminTables.updatedAt,
 };
 
-function parsePositiveInt(value: unknown, fallback: number) {
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return fallback;
-  }
-
-  return Math.floor(parsed);
-}
-
-function parseFiltersQuery(value: unknown): ApiCrudFilter[] {
-  if (!value) {
-    return [];
-  }
-
-  const rawValue = Array.isArray(value) ? value[0] : value;
-
-  if (typeof rawValue !== "string" || rawValue.length === 0) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed as ApiCrudFilter[];
-  } catch {
-    return [];
-  }
-}
-
-function isConditionalFilter(
-  filter: ApiCrudFilter,
-): filter is Extract<ApiCrudFilter, { operator: "or" | "and" }> {
-  return filter.operator === "or" || filter.operator === "and";
-}
-
-function isEmptyFilterValue(operator: string, value: unknown) {
-  if (operator === "null" || operator === "nnull") {
-    return false;
-  }
-
-  if (value === undefined || value === null || value === "") {
-    return true;
-  }
-
-  if (Array.isArray(value) && value.length === 0) {
-    return true;
-  }
-
-  return false;
-}
-
-function toArray(value: unknown) {
-  if (Array.isArray(value)) {
-    return value;
-  }
-
-  if (value === undefined || value === null || value === "") {
-    return [];
-  }
-
-  return [value];
-}
-
-function toStringValue(value: unknown) {
-  return String(value ?? "");
-}
-
-function buildColumnFilterCondition(
-  column: AnyColumn,
-  operator: string,
-  value: unknown,
-): SQL | undefined {
-  if (isEmptyFilterValue(operator, value)) {
-    return undefined;
-  }
-
-  switch (operator) {
-    case "eq":
-      return eq(column, value);
-
-    case "ne":
-      return ne(column, value);
-
-    case "lt":
-      return lt(column, value);
-
-    case "gt":
-      return gt(column, value);
-
-    case "lte":
-      return lte(column, value);
-
-    case "gte":
-      return gte(column, value);
-
-    case "in": {
-      const values = toArray(value);
-
-      if (values.length === 0) {
-        return undefined;
-      }
-
-      return inArray(column, values);
-    }
-
-    case "nin": {
-      const values = toArray(value);
-
-      if (values.length === 0) {
-        return undefined;
-      }
-
-      return not(inArray(column, values));
-    }
-
-    case "contains":
-      return ilike(column, `%${toStringValue(value)}%`);
-
-    case "ncontains":
-      return not(ilike(column, `%${toStringValue(value)}%`));
-
-    case "containss":
-      return like(column, `%${toStringValue(value)}%`);
-
-    case "ncontainss":
-      return not(like(column, `%${toStringValue(value)}%`));
-
-    case "startswith":
-      return ilike(column, `${toStringValue(value)}%`);
-
-    case "nstartswith":
-      return not(ilike(column, `${toStringValue(value)}%`));
-
-    case "startswiths":
-      return like(column, `${toStringValue(value)}%`);
-
-    case "nstartswiths":
-      return not(like(column, `${toStringValue(value)}%`));
-
-    case "endswith":
-      return ilike(column, `%${toStringValue(value)}`);
-
-    case "nendswith":
-      return not(ilike(column, `%${toStringValue(value)}`));
-
-    case "endswiths":
-      return like(column, `%${toStringValue(value)}`);
-
-    case "nendswiths":
-      return not(like(column, `%${toStringValue(value)}`));
-
-    case "between": {
-      if (!Array.isArray(value) || value.length < 2) {
-        return undefined;
-      }
-
-      return and(gte(column, value[0]), lte(column, value[1]));
-    }
-
-    case "nbetween": {
-      if (!Array.isArray(value) || value.length < 2) {
-        return undefined;
-      }
-
-      return or(lt(column, value[0]), gt(column, value[1]));
-    }
-
-    case "null":
-      return isNull(column);
-
-    case "nnull":
-      return isNotNull(column);
-
-    default:
-      return undefined;
-  }
-}
-
-function isNegativeOperator(operator: string) {
-  return [
-    "ne",
-    "nin",
-    "ncontains",
-    "ncontainss",
-    "nstartswith",
-    "nstartswiths",
-    "nendswith",
-    "nendswiths",
-    "nbetween",
-  ].includes(operator);
-}
-
-function buildNameOrLabelFilterCondition(
-  operator: string,
-  value: unknown,
-): SQL | undefined {
-  const nameCondition = buildColumnFilterCondition(
-    adminTables.name,
-    operator,
-    value,
-  );
-
-  const labelCondition = buildColumnFilterCondition(
-    adminTables.label,
-    operator,
-    value,
-  );
-
-  const conditions = [nameCondition, labelCondition].filter(Boolean) as SQL[];
-
-  if (conditions.length === 0) {
-    return undefined;
-  }
-
-  /**
-   * Для положительных операторов:
-   * name contains value OR label contains value
-   *
-   * Для отрицательных:
-   * name not contains value AND label not contains value
-   */
-  if (isNegativeOperator(operator)) {
-    return and(...conditions);
-  }
-
-  return or(...conditions);
-}
-
-function buildFilterCondition(filter: ApiCrudFilter): SQL | undefined {
-  if (isConditionalFilter(filter)) {
-    const conditions = filter.value
-      .map(buildFilterCondition)
-      .filter(Boolean) as SQL[];
-
-    if (conditions.length === 0) {
-      return undefined;
-    }
-
-    if (filter.operator === "or") {
-      return or(...conditions);
-    }
-
-    return and(...conditions);
-  }
-
-  if (filter.field === "name") {
-    return buildNameOrLabelFilterCondition(filter.operator, filter.value);
-  }
-
-  const column = tableFilterColumns[filter.field];
-
-  if (!column) {
-    return undefined;
-  }
-
-  return buildColumnFilterCondition(column, filter.operator, filter.value);
-}
-
-function buildWhereFromFilters(filters: ApiCrudFilter[]) {
-  const conditions = filters.map(buildFilterCondition).filter(Boolean) as SQL[];
-
-  if (conditions.length === 0) {
-    return undefined;
-  }
-
-  return and(...conditions);
+function buildTablesWhere(filters: ReturnType<typeof parseFiltersQuery>) {
+  return buildWhereFromCrudFilters(filters, tableFilterColumns, {
+    fieldHandlers: {
+      name: (operator, value) =>
+        buildMultiColumnFilterCondition(
+          [adminTables.name, adminTables.label],
+          operator,
+          value,
+        ),
+    },
+  });
 }
 
 tablesRouter.get(
@@ -337,7 +52,7 @@ tablesRouter.get(
     const includeFields = req.query.includeFields === "true";
 
     const filters = parseFiltersQuery(req.query.filters);
-    const where = buildWhereFromFilters(filters);
+    const where = buildTablesWhere(filters);
 
     const shouldPaginate =
       req.query.page !== undefined ||
@@ -398,9 +113,9 @@ tablesRouter.get(
       .groupBy(adminTables.id)
       .orderBy(desc(adminTables.updatedAt));
 
-    // if (shouldPaginate) {
-    //   tablesQuery = tablesQuery.limit(pageSize).offset(offset);
-    // }
+    if (shouldPaginate) {
+      tablesQuery = tablesQuery.limit(pageSize).offset(offset);
+    }
 
     const tables = await tablesQuery;
 
@@ -598,7 +313,6 @@ tablesRouter.delete(
 
     const ids = parseIdsQuery(req.query.ids);
 
-
     if (ids.length === 0) {
       res.status(400).json({
         error: "Invalid field value",
@@ -609,7 +323,6 @@ tablesRouter.delete(
       });
       return;
     }
-    console.log(ids)
 
     const deletedTables = await db.transaction(async (tx) => {
       await tx

@@ -247,7 +247,6 @@ const options = {
 
     buildQueryParams: async ({ pagination, filters, sorters, meta }) => {
       const params: QueryParams = {};
-
       if (pagination?.mode !== "off") {
         params.page = pagination?.currentPage ?? 1;
         params.pageSize = pagination?.pageSize ?? 10;
@@ -268,7 +267,6 @@ const options = {
       if (meta?.includeFields) {
         params.includeFields = true;
       }
-
       return params;
     },
 
@@ -362,62 +360,6 @@ const options = {
       const payload = await parseJson<ApiListResponse>(response);
 
       return getListData(payload);
-    },
-  },
-
-  custom: {
-    buildHeaders: async ({ headers, payload }) => {
-      const isFormData = payload instanceof FormData;
-
-      return {
-        ...(isFormData ? {} : { "Content-Type": "application/json" }),
-        ...(headers ?? {}),
-      };
-    },
-
-    buildQueryParams: async ({ query, filters, sorters }) => {
-      const params: QueryParams = {};
-
-      if (query && typeof query === "object") {
-        Object.entries(query as Record<string, unknown>).forEach(
-          ([key, value]) => {
-            appendQueryValue(params, key, value);
-          },
-        );
-      }
-
-      const filtersParam = buildFiltersParam(filters);
-
-      if (filtersParam) {
-        params[FILTERS_QUERY_KEY] = filtersParam;
-      }
-
-      if (sorters?.length) {
-        params.sort = sorters
-          .map((sorter) => `${sorter.field}:${sorter.order}`)
-          .join(",");
-      }
-
-      return params;
-    },
-
-    buildBodyParams: async (params) => {
-      const body =
-        (params as { values?: unknown }).values ??
-        (params as { payload?: unknown }).payload ??
-        {};
-
-      console.log("[dataProvider.custom] body:", body);
-
-      return body;
-    },
-
-    mapResponse: async (response) => {
-      await assertOk(response);
-
-      const payload = await parseJson<unknown>(response);
-
-      return getResponseData(payload);
     },
   },
 } satisfies CreateDataProviderOptions;

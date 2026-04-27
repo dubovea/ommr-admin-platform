@@ -334,7 +334,7 @@ export function TableListPage() {
     refineCoreProps: {
       resource: "tables",
       pagination: {
-        mode: "client",
+        mode: "server",
       },
       filters: {
         permanent: [...searchFilters],

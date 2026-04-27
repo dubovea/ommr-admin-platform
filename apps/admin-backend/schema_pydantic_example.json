@@ -660,119 +660,153 @@
         "$ref": "#/$defs/Cargoes"
       },
       "title": "Cargoes",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "tracks": {
       "items": {
         "$ref": "#/$defs/Tracks"
       },
       "title": "Tracks",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "tracks_links": {
       "items": {
         "$ref": "#/$defs/TracksLinks"
       },
       "title": "Tracks Links",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "locos": {
       "items": {
         "$ref": "#/$defs/Locos"
       },
       "title": "Locos",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "locos_manevours": {
       "items": {
         "$ref": "#/$defs/LocosManevours"
       },
       "title": "Locos Manevours",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "load_racks": {
       "items": {
         "$ref": "#/$defs/LoadRacks"
       },
       "title": "Load Racks",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "load_rack_variants": {
       "items": {
         "$ref": "#/$defs/LoadRackVariantsData"
       },
       "title": "Load Rack Variants",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "wagon_types": {
       "items": {
         "$ref": "#/$defs/WagonTypes"
       },
       "title": "Wagon Types",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "operation_time": {
       "items": {
         "$ref": "#/$defs/OperationTime"
       },
       "title": "Operation Time",
-      "type": "array"
+      "type": "array",
+      "x-group": "master_tables",
+      "x-group-name": "Мастер-таблицы"
     },
     "shipments": {
       "items": {
         "$ref": "#/$defs/Shipment"
       },
       "title": "Shipments",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "locos_inits": {
       "items": {
         "$ref": "#/$defs/LocosInits"
       },
       "title": "Locos Inits",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "locos_intransit": {
       "items": {
         "$ref": "#/$defs/LocosIntransit"
       },
       "title": "Locos Intransit",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "load_racks_process": {
       "items": {
         "$ref": "#/$defs/LoadRacksProcess"
       },
       "title": "Load Racks Process",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "wagons_inits": {
       "items": {
         "$ref": "#/$defs/WagonsInits"
       },
       "title": "Wagons Inits",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "wagons_arrival": {
       "items": {
         "$ref": "#/$defs/WagonsArrivals"
       },
       "title": "Wagons Arrival",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "resource_unavailable": {
       "items": {
         "$ref": "#/$defs/ResourceUnavailable"
       },
       "title": "Resource Unavailable",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "locos_shift_change": {
       "items": {
         "$ref": "#/$defs/LocosShiftChange"
       },
       "title": "Locos Shift Change",
-      "type": "array"
+      "type": "array",
+      "x-group": "detail_tables",
+      "x-group-name": "Детальные таблицы"
     },
     "excel_pages_columns": {
       "items": {
