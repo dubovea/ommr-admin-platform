@@ -1,37 +1,29 @@
 {
   "name": "ommr-admin-platform",
   "private": true,
-  "version": "0.1.0",
+  "packageManager": "yarn@4.14.1",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,admin -c blue,green \"yarn dev:admin-backend\" \"yarn dev:admin-frontend\"",
-    "dev:admin-frontend": "yarn workspace @ommr/admin-frontend dev",
+    "dev": "concurrently -n shared,backend,frontend -c blue,green,magenta \"yarn dev:shared\" \"yarn dev:admin-backend\" \"yarn dev:admin-frontend\"",
+    "dev:shared": "yarn workspace @ommr/shared dev",
+    "build:shared": "yarn workspace @ommr/shared build",
+    "typecheck:shared": "yarn workspace @ommr/shared typecheck",
     "dev:admin-backend": "yarn workspace @ommr/admin-backend dev",
-    "build": "yarn workspace @ommr/shared build && yarn workspace @ommr/admin-backend build && yarn workspace @ommr/admin-frontend build",
-    "build:admin-frontend": "yarn workspace @ommr/shared build && yarn workspace @ommr/admin-frontend build",
     "build:admin-backend": "yarn workspace @ommr/shared build && yarn workspace @ommr/admin-backend build",
-    "typecheck": "yarn workspace @ommr/shared typecheck && yarn workspace @ommr/admin-backend typecheck && yarn workspace @ommr/admin-frontend typecheck",
-    "db:generate": "yarn workspace @ommr/admin-backend db:generate",
-    "db:migrate": "yarn workspace @ommr/admin-backend db:migrate",
-    "db:push": "yarn workspace @ommr/admin-backend db:push",
-    "db:studio": "yarn workspace @ommr/admin-backend db:studio",
-    "db:reset": "yarn workspace @ommr/admin-backend db:reset",
-    "db:reinit": "yarn workspace @ommr/admin-backend db:reset && yarn workspace @ommr/admin-backend db:push",
-    "seed": "yarn workspace @ommr/admin-backend seed",
+    "start:admin-backend": "yarn workspace @ommr/admin-backend start",
+    "dev:admin-frontend": "yarn workspace @ommr/admin-frontend dev",
+    "build:admin-frontend": "yarn workspace @ommr/shared build && yarn workspace @ommr/admin-frontend build",
+    "preview:admin-frontend": "yarn workspace @ommr/admin-frontend preview",
+    "build": "yarn build:shared && yarn workspace @ommr/admin-backend build && yarn workspace @ommr/admin-frontend build",
+    "docker:build": "docker compose build",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "typescript": "^5.9.2"
-  },
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
-  },
-  "packageManager": "yarn@4.14.1"
+    "concurrently": "^9.2.1"
+  }
 }

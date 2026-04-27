@@ -6,8 +6,8 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://ommr:ommr_password@localhost:5433/ommr_admin"
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL!,
   },
   verbose: true,
-  strict: true
+  strict: true,
 });

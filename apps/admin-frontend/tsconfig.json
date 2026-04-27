@@ -1,18 +1,33 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
     "noEmit": true,
+
     "types": ["vite/client"],
+
     "paths": {
-      "@/*": ["src/*"],
-      "@ommr/shared": ["../../packages/shared/src/index.ts"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "vite.config.ts", "../../packages/shared/src"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts"
+  ],
   "exclude": [
+    "node_modules",
+    "dist",
+
     "src/components/ui/carousel.tsx",
     "src/components/ui/chart.tsx",
     "src/components/ui/drawer.tsx",
