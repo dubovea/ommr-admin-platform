@@ -6,11 +6,18 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "types": ["vite/client"],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["src/*"],
       "@ommr/shared": ["../../packages/shared/src/index.ts"]
     }
   },
-  "include": ["src", "vite.config.ts", "../../packages/shared/src"]
+  "include": ["src", "vite.config.ts", "../../packages/shared/src"],
+  "exclude": [
+    "src/components/ui/carousel.tsx",
+    "src/components/ui/chart.tsx",
+    "src/components/ui/drawer.tsx",
+    "src/components/ui/input-otp.tsx",
+    "src/components/ui/resizable.tsx",
+    "src/components/ui/sonner.tsx"
+  ]
 }

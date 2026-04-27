@@ -5,7 +5,11 @@
     "rootDir": "src",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@ommr/shared": ["../../packages/shared/dist/index.d.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "drizzle", "drizzle.config.ts"]
 }

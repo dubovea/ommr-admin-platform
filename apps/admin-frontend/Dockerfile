@@ -12,17 +12,11 @@ ENV VITE_REFINE_DEVTOOLS=$VITE_REFINE_DEVTOOLS
 ENV REFINE_NO_TELEMETRY=$REFINE_NO_TELEMETRY
 
 COPY package.json yarn.lock .yarnrc.yml tsconfig.base.json ./
-
-COPY packages/shared/package.json ./packages/shared/package.json
-COPY apps/admin-backend/package.json ./apps/admin-backend/package.json
-COPY apps/admin-frontend/package.json ./apps/admin-frontend/package.json
+COPY packages ./packages
+COPY apps ./apps
 
 RUN yarn install --immutable
-
-COPY packages ./packages
-COPY apps/admin-frontend ./apps/admin-frontend
-
-RUN yarn workspace @ommr/shared typecheck
+RUN yarn workspace @ommr/shared build
 RUN yarn workspace @ommr/admin-frontend build
 
 FROM nginx:1.27-alpine AS runtime

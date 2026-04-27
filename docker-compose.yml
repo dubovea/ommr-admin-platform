@@ -30,7 +30,7 @@ services:
       HOST: 0.0.0.0
       PORT: 4000
       JSON_BODY_LIMIT: ${JSON_BODY_LIMIT:-20mb}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080,http://localhost:5174}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
       DATABASE_URL: postgres://${POSTGRES_USER:-ommr}:${POSTGRES_PASSWORD:-ommr_password}@postgres:5432/${POSTGRES_DB:-ommr_admin}
     ports:
       - "${BACKEND_PORT:-4000}:4000"

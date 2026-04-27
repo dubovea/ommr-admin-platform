@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
-import type { FieldRelationMeta } from "@ommr/shared";
+import type { FieldRelationInput, FieldRelationMeta } from "@ommr/shared";
 
 import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
@@ -11,7 +11,7 @@ import { parsePydanticJsonSchema } from "../../services/pydantic-schema-parser.s
 export const schemasRouter = Router();
 
 function mapImportedRelation(
-  relation: FieldRelationMeta | null | undefined,
+  relation: FieldRelationInput | null | undefined,
   importedTableIdsByName: Map<string, string>,
 ): {
   relation: FieldRelationMeta | null;
@@ -35,8 +35,11 @@ function mapImportedRelation(
 
   return {
     relation: {
-      ...relation,
       targetTableId,
+      targetTable: relation.targetTable ?? "",
+      targetKey: relation.targetKey ?? "id",
+      displayField: relation.displayField ?? "name",
+      additionalText: relation.additionalText ?? null,
     },
     relationTargetTableId: targetTableId,
   };

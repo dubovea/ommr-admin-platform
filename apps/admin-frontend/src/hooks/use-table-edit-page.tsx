@@ -387,7 +387,7 @@ export function useTableEditPage(tableId?: string) {
     setActiveFieldId((userIdRow ?? fieldRows[0]).id);
   }, [fieldRows, activeFieldId]);
 
-  function saveTable(values: AdminTableMeta) {
+  function saveTable(values: UpdateAdminTableInput) {
     const payload: UpdateAdminTableInput = {
       label: values.label,
       name: values.name,

@@ -31,7 +31,7 @@ const tables: SeedTable[] = [
         name: "id",
         label: "ID",
         dbType: "int",
-        inputType: "number",
+        inputType: "integer",
         required: true,
         editable: false,
         sortable: true,
@@ -89,7 +89,7 @@ const tables: SeedTable[] = [
         name: "id",
         label: "ID",
         dbType: "int",
-        inputType: "number",
+        inputType: "integer",
         required: true,
         editable: false,
         sortable: true,
@@ -128,7 +128,7 @@ const tables: SeedTable[] = [
         name: "total_amount",
         label: "Сумма",
         dbType: "decimal",
-        inputType: "number",
+        inputType: "float",
         required: true,
         editable: true,
         sortable: true,
@@ -158,7 +158,7 @@ const tables: SeedTable[] = [
         name: "id",
         label: "ID",
         dbType: "int",
-        inputType: "number",
+        inputType: "integer",
         required: true,
         editable: false,
         sortable: true,
@@ -178,7 +178,7 @@ const tables: SeedTable[] = [
         name: "price",
         label: "Цена",
         dbType: "decimal",
-        inputType: "number",
+        inputType: "float",
         required: true,
         sortable: true,
         filterable: true,
@@ -209,7 +209,7 @@ const tables: SeedTable[] = [
         name: "id",
         label: "ID",
         dbType: "int",
-        inputType: "number",
+        inputType: "integer",
         required: true,
         editable: false,
         sortable: true,
@@ -250,7 +250,7 @@ const tables: SeedTable[] = [
         name: "id",
         label: "ID",
         dbType: "int",
-        inputType: "number",
+        inputType: "integer",
         required: true,
         editable: false,
         sortable: true,
@@ -273,6 +273,8 @@ const tables: SeedTable[] = [
 await db.delete(adminFields);
 await db.delete(adminTables);
 
+const tableIdByName = new Map<string, string>();
+
 for (const table of tables) {
   const [createdTable] = await db
     .insert(adminTables)
@@ -287,9 +289,35 @@ for (const table of tables) {
     })
     .returning();
 
-  await db.insert(adminFields).values(
-    table.fields.map((field, index) => ({
-      tableId: createdTable.id,
+  tableIdByName.set(table.name, createdTable.id);
+}
+
+for (const table of tables) {
+  const tableId = tableIdByName.get(table.name);
+
+  if (!tableId) {
+    continue;
+  }
+
+  const values = table.fields.map((field, index) => {
+    const targetTableName = field.relation?.targetTable ?? null;
+    const targetTableId = targetTableName
+      ? tableIdByName.get(targetTableName) ?? null
+      : null;
+
+    const relation: FieldRelationMeta | null =
+      field.relation && targetTableId
+        ? {
+            targetTableId,
+            targetTable: field.relation.targetTable ?? targetTableName ?? "",
+            targetKey: field.relation.targetKey ?? "id",
+            displayField: field.relation.displayField ?? "name",
+            additionalText: field.relation.additionalText ?? null,
+          }
+        : null;
+
+    return {
+      tableId,
       name: field.name,
       label: field.label,
       dbType: field.dbType,
@@ -301,10 +329,15 @@ for (const table of tables) {
       visible: field.visible ?? true,
       placeholder: field.placeholder ?? null,
       helpText: field.helpText ?? null,
-      relation: field.relation ?? null,
+      relation,
+      relationTargetTableId: targetTableId,
       sortOrder: index + 1,
-    })),
-  );
+    };
+  });
+
+  if (values.length > 0) {
+    await db.insert(adminFields).values(values);
+  }
 }
 
 console.log("[seed] Demo metadata created");

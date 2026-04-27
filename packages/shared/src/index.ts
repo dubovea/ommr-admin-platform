@@ -282,6 +282,7 @@ type CreateAdminFieldInputBase = Pick<
 type UpdateAdminFieldInputBase = Partial<
   Pick<
     AdminFieldMeta,
+    | "name"
     | "label"
     | "dbType"
     | "inputType"

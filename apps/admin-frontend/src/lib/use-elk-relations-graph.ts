@@ -114,7 +114,7 @@ function getVisibleData(params: {
 }) {
   const { response, hiddenTableNames } = params;
 
-  const relations = response?.data?.relations.filter(
+  const relations = response.relations.filter(
     (relation) =>
       !hiddenTableNames.has(relation.sourceTable.name) &&
       !hiddenTableNames.has(relation.targetTable.name),
@@ -127,7 +127,7 @@ function getVisibleData(params: {
     ]),
   );
 
-  const tables = response?.data?.tables.filter(
+  const tables = response.tables.filter(
     (table) =>
       !hiddenTableNames.has(table.name) && relatedTableNames.has(table.name),
   );
@@ -390,7 +390,7 @@ export function useElkRelationsGraph(params: {
 
       try {
         const elkGraph = buildElkGraph(visibleData);
-        const result = (await elk.layout(elkGraph)) as ElkLayoutedGraph;
+        const result = (await elk.layout(elkGraph as any)) as ElkLayoutedGraph;
 
         if (!cancelled) {
           setLayoutedGraph(result);
@@ -419,11 +419,11 @@ export function useElkRelationsGraph(params: {
       };
     }
 
-    const layoutedNodeById = new Map(
+    const layoutedNodeById = new Map<string, ElkLayoutedNode>(
       layoutedGraph.children.map((node) => [node.id, node]),
     );
 
-    const layoutedEdgeById = new Map(
+    const layoutedEdgeById = new Map<string, ElkEdgeShape>(
       layoutedGraph.edges.map((edge) => [edge.id, edge]),
     );
 

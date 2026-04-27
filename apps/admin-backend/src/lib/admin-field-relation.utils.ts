@@ -11,7 +11,7 @@ import type {
 import { db } from "../db/index.js";
 import { adminFields, adminTables } from "../db/schema.js";
 
-type DbOrTx = typeof db;
+type DbOrTx = Pick<typeof db, "select" | "insert" | "update" | "delete">;
 
 type AdminFieldRow = typeof adminFields.$inferSelect;
 
@@ -51,7 +51,7 @@ function pickDefaultDisplayField(fields: AdminFieldRow[]) {
     fields.find(
       (field) =>
         field.visible &&
-        ["text", "textarea", "select", "number"].includes(field.inputType),
+        ["text", "textarea", "select", "integer", "float"].includes(field.inputType),
     ) ??
     fields.find((field) => field.visible) ??
     fields[0] ??
@@ -272,7 +272,8 @@ export async function normalizeFieldUpdatePayloadForDb(params: {
    * значит relation не трогаем.
    */
   if (!hasOwnKey(payload, "relation")) {
-    return payload;
+    const { relation: _relation, ...payloadWithoutRelation } = payload;
+    return payloadWithoutRelation;
   }
 
   const normalizedRelation = await normalizeRelationForSave({
@@ -282,7 +283,8 @@ export async function normalizeFieldUpdatePayloadForDb(params: {
   });
 
   if (!normalizedRelation) {
-    return payload;
+    const { relation: _relation, ...payloadWithoutRelation } = payload;
+    return payloadWithoutRelation;
   }
 
   return {

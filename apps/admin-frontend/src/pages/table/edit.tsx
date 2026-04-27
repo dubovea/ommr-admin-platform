@@ -356,7 +356,7 @@ export function TableEditPage() {
                 <CardContent>
                   <DataTable
                     table={tableEdit.fieldsTable as any}
-                    onRowClick={(row) => tableEdit.setActiveFieldId(row.id)}
+                    onRowClick={(row) => tableEdit.setActiveFieldId(row.id ? String(row.id) : null)}
                   />
                 </CardContent>
               </Card>

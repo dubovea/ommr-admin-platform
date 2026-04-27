@@ -34,7 +34,7 @@ export function DeleteItemsDialog({
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
   description: ReactNode;
-  items?: ConfirmDeleteDialogItem[];
+  items?: DeleteItemsDialogItem[];
   itemsTitle?: ReactNode;
   confirmText?: string;
   cancelText?: string;

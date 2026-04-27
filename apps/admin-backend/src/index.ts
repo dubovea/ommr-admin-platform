@@ -9,11 +9,17 @@ const app = express();
 const port = Number(process.env.PORT ?? 4000);
 const host = process.env.HOST ?? "0.0.0.0";
 const jsonLimit = process.env.JSON_BODY_LIMIT ?? "20mb";
+const corsOrigin = process.env.CORS_ORIGIN?.trim() || "*";
 
 app.use(
   cors({
-    origin: "*",
-    credentials: false,
+    origin:
+      corsOrigin === "*"
+        ? "*"
+        : corsOrigin
+            .split(",")
+            .map((origin) => origin.trim())
+            .filter(Boolean),
   }),
 );
 

@@ -29,12 +29,16 @@ type EditViewHeaderProps = PropsWithChildren<{
   wrapperClassName?: string;
   headerClassName?: string;
   actionsSlot?: React.ReactNode;
+  onSave?: () => void | Promise<void>;
+  saving?: boolean;
 }>;
 
 export const EditViewHeader = ({
   resource: resourceFromProps,
   title: titleFromProps,
   actionsSlot,
+  onSave,
+  saving = false,
   wrapperClassName,
   headerClassName,
 }: EditViewHeaderProps) => {
@@ -83,6 +87,13 @@ export const EditViewHeader = ({
 
         <div className="flex items-center gap-2">
           {actionsSlot}
+
+          {onSave ? (
+            <Button disabled={saving} onClick={() => void onSave()}>
+              {saving ? "Сохранение..." : "Сохранить"}
+            </Button>
+          ) : null}
+
           <RefreshButton
             variant="outline"
             recordItemId={recordItemId}

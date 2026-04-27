@@ -2,9 +2,10 @@ import {
   DEFAULT_FIELD_VALIDATION,
   SIDEBAR_ITEMS,
   type CreateAdminFieldInput,
+  type FieldDefaultValue,
   type FieldInputType,
   type FieldOption,
-  type FieldRelationMeta,
+  type FieldRelationInput,
 } from "@ommr/shared";
 
 type SidebarGroupItem = {
@@ -173,25 +174,27 @@ function extractSchemas(schema: JsonSchema): ExtractedSchemaEntry[] {
     schema.components?.schemas ?? schema.$defs ?? schema.definitions ?? null;
 
   if (defs && schema.type === "object" && schema.properties) {
-    const referencedEntries = Object.entries(schema.properties)
-      .map(([propertyName, propertySchema]) => {
+    const referencedEntries = Object.entries(schema.properties).flatMap(
+      ([propertyName, propertySchema]): ExtractedSchemaEntry[] => {
         const ref = propertySchema.$ref ?? propertySchema.items?.$ref;
 
-        if (!ref) return null;
+        if (!ref) return [];
 
         const targetName = ref.split("/").pop();
-        if (!targetName) return null;
+        if (!targetName) return [];
 
         const targetSchema = defs[targetName];
-        if (!targetSchema) return null;
+        if (!targetSchema) return [];
 
-        return {
-          tableName: propertyName,
-          modelSchema: targetSchema,
-          rootPropertySchema: propertySchema,
-        } satisfies ExtractedSchemaEntry;
-      })
-      .filter((entry): entry is ExtractedSchemaEntry => entry !== null);
+        return [
+          {
+            tableName: propertyName,
+            modelSchema: targetSchema,
+            rootPropertySchema: propertySchema,
+          },
+        ];
+      },
+    );
 
     if (referencedEntries.length > 0) {
       return referencedEntries;
@@ -247,7 +250,7 @@ function resolveNullable(schema: JsonSchema): JsonSchema {
   };
 }
 
-function getRelation(schema: JsonSchema): FieldRelationMeta | null {
+function getRelation(schema: JsonSchema): FieldRelationInput | null {
   const relation = schema["x-relation"];
 
   if (relation?.to_table && relation?.link_key && relation?.display_field) {
@@ -292,8 +295,41 @@ function getOptions(schema: JsonSchema): FieldOption[] | null {
   return null;
 }
 
-function getDefaultValue(schema: JsonSchema) {
-  return hasOwn(schema, "default") ? schema.default : null;
+function getDefaultValue(schema: JsonSchema): FieldDefaultValue | null {
+  if (!hasOwn(schema, "default")) {
+    return null;
+  }
+
+  return normalizeDefaultValue(schema.default);
+}
+
+function normalizeDefaultValue(value: unknown): FieldDefaultValue | null {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.every((item) => typeof item === "string")) {
+      return value;
+    }
+
+    if (value.every((item) => typeof item === "number")) {
+      return value;
+    }
+
+    return null;
+  }
+
+  if (typeof value === "object") {
+    return value as Record<string, unknown>;
+  }
+
+  return null;
 }
 
 function getInputType(schema: JsonSchema): FieldInputType {
@@ -310,7 +346,7 @@ function getInputType(schema: JsonSchema): FieldInputType {
 
 function getDbType(
   schema: JsonSchema,
-  relation: FieldRelationMeta | null,
+  relation: FieldRelationInput | null,
 ): string {
   if (relation) return "relation";
   if (schema.enum) return "enum";
