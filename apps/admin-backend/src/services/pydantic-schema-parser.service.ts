@@ -138,7 +138,7 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
 
             return {
               name: fieldName,
-              label: toTitle(fieldName),
+              label: getFieldLabel(fieldName, resolved),
               dbType: getDbType(resolved, relation),
               inputType: relation ? "multiselect" : getInputType(resolved),
 
@@ -406,6 +406,10 @@ function getDbType(
 
 function getSchemaTitle(schema?: JsonSchema): string | null {
   return getNonEmptyString(schema?.title);
+}
+
+function getFieldLabel(fieldName: string, schema: JsonSchema): string {
+  return getSchemaTitle(schema) ?? toTitle(fieldName);
 }
 
 function getNonEmptyString(value: unknown): string | null {
