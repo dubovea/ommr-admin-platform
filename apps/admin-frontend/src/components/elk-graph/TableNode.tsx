@@ -20,6 +20,7 @@ export type TableNodeData = {
   relations: RelationGraphRelation[];
   isDimmed: boolean;
   isHighlighted: boolean;
+  onFocusTable?: (tableName: string) => void;
 };
 
 export type TableNodeType = Node<TableNodeData, "tableNode">;
@@ -41,10 +42,11 @@ export function TableNode({ data }: NodeProps<TableNodeType>) {
   return (
     <div
       className={[
-        "w-[340px] overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-150",
+        "nodrag nopan w-[340px] overflow-hidden rounded-xl border bg-background shadow-sm transition-all duration-150",
         data.isHighlighted ? "ring-2 ring-blue-400/70" : "",
         data.isDimmed ? "opacity-15" : "opacity-100",
       ].join(" ")}
+      onMouseEnter={() => data.onFocusTable?.(data.table.name)}
     >
       <div className="flex h-[58px] items-center gap-3 border-b bg-muted/40 px-4">
         <div className="grid size-8 place-items-center rounded-lg bg-background shadow-sm">

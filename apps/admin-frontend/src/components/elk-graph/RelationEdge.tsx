@@ -1,4 +1,3 @@
-// apps/admin-frontend/src/pages/relations/components/RelationEdge.tsx
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -21,7 +20,6 @@ export type RelationEdgeData = {
   isDimmed: boolean;
   isHighlighted: boolean;
   onFocusRelation?: (relationId: string) => void;
-  onBlurRelation?: () => void;
 };
 
 export type RelationEdgeType = Edge<RelationEdgeData, "relationEdge">;
@@ -103,10 +101,12 @@ export function RelationEdge({
         d={path}
         fill="none"
         stroke="transparent"
-        strokeWidth={22}
-        className="cursor-pointer"
+        strokeWidth={26}
+        className="nodrag nopan cursor-pointer"
+        style={{
+          pointerEvents: "stroke",
+        }}
         onMouseEnter={() => data?.onFocusRelation?.(id)}
-        onMouseLeave={() => data?.onBlurRelation?.()}
       />
 
       <EdgeLabelRenderer>
@@ -121,7 +121,6 @@ export function RelationEdge({
             zIndex: data?.isHighlighted ? 1001 : 20,
           }}
           onMouseEnter={() => data?.onFocusRelation?.(id)}
-          onMouseLeave={() => data?.onBlurRelation?.()}
         >
           <div className="flex items-center gap-1.5 whitespace-nowrap font-semibold">
             <Link2 className="size-3" />
@@ -131,7 +130,7 @@ export function RelationEdge({
           </div>
 
           <div className="mt-0.5 whitespace-nowrap text-[10px] text-muted-foreground">
-            display:{" "}
+            displayName:{" "}
             <span style={{ color: data?.color }}>
               {data?.relation.relation.displayField}
             </span>

@@ -1,190 +1,390 @@
-import type {
-  CrudFilter,
-  CrudSorting,
-  DataProvider,
-  HttpError,
-} from "@refinedev/core";
+import { BACKEND_BASE_URL } from "@/assets/constants";
+import type { CreateResponse, GetOneResponse, ListResponse } from "@/types";
+import type { CrudFilter, HttpError } from "@refinedev/core";
+import {
+  createDataProvider,
+  type CreateDataProviderOptions,
+} from "@refinedev/rest";
 
-const API_URL = "/api/admin";
-
-type ApiListResponse<T> = { data: T[]; total?: number };
-type ApiOneResponse<T> = { data: T };
-
-function appendFilters(searchParams: URLSearchParams, filters?: CrudFilter[]) {
-  filters?.forEach((filter) => {
-    if ("field" in filter && filter.operator === "eq") {
-      searchParams.set(filter.field, String(filter.value));
-    }
-  });
+if (!BACKEND_BASE_URL) {
+  throw new Error("BACKEND_BASE_URL is not defined in environment variables");
 }
 
-function appendSorters(searchParams: URLSearchParams, sorters?: CrudSorting) {
-  sorters?.forEach((sorter) => {
-    searchParams.append("sort", `${sorter.field}:${sorter.order}`);
-  });
-}
+const FILTERS_QUERY_KEY = "filters";
 
-function appendIds(searchParams: URLSearchParams, ids: Array<string | number>) {
-  ids.forEach((id) => {
-    searchParams.append("ids", String(id));
-  });
-}
+type QueryParams = Record<string, string | number | boolean>;
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const isFormData = init?.body instanceof FormData;
-
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...(init?.headers ?? {}),
-    },
-  });
-
-  if (!response.ok) {
-    let message = response.statusText;
-
-    try {
-      const errorBody = await response.json();
-
-      message =
-        errorBody?.message ||
-        errorBody?.error ||
-        errorBody?.data?.message ||
-        response.statusText;
-    } catch {
-      const text = await response.text();
-      message = text || response.statusText;
+type SerializedCrudFilter =
+  | {
+      field: string;
+      operator: string;
+      value?: unknown;
     }
-
-    const error: HttpError = {
-      message,
-      statusCode: response.status,
+  | {
+      key?: string;
+      operator: "or" | "and";
+      value: SerializedCrudFilter[];
     };
 
-    throw error;
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
-}
-
-export const dataProvider: DataProvider = {
-  getList: async ({ resource, pagination, filters, sorters, meta }) => {
-    const searchParams = new URLSearchParams();
-
-    if (pagination?.mode !== "off") {
-      searchParams.set("page", String(pagination?.currentPage ?? 1));
-      searchParams.set("pageSize", String(pagination?.pageSize ?? 10));
-    }
-    appendFilters(searchParams, filters);
-    appendSorters(searchParams, sorters);
-
-    if (meta?.includeFields) {
-      searchParams.set("includeFields", "true");
-    }
-
-    const qs = searchParams.toString();
-
-    const response = await request<ApiListResponse<unknown>>(
-      `${API_URL}/${resource}${qs ? `?${qs}` : ""}`,
-    );
-
-    return {
-      data: response.data,
-      total: response.total ?? response.data.length,
-    };
-  },
-
-  getOne: async ({ resource, id }) => ({
-    data: (
-      await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}/${id}`)
-    ).data,
-  }),
-
-  create: async ({ resource, variables }) => ({
-    data: (
-      await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}`, {
-        method: "POST",
-        body: JSON.stringify(variables),
-      })
-    ).data,
-  }),
-
-  update: async ({ resource, id, variables }) => ({
-    data: (
-      await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(variables),
-      })
-    ).data,
-  }),
-
-  deleteOne: async ({ resource, id }) => ({
-    data: (
-      await request<ApiOneResponse<unknown>>(`${API_URL}/${resource}/${id}`, {
-        method: "DELETE",
-      })
-    ).data,
-  }),
-
-  deleteMany: async ({ resource, ids }) => {
-    const searchParams = new URLSearchParams();
-
-    appendIds(searchParams, ids.map(String));
-    const response = await request<ApiListResponse<unknown>>(
-      `${API_URL}/${resource}?${searchParams.toString()}`,
-      {
-        method: "DELETE",
-      },
-    );
-
-    return {
-      data: response.data,
-    };
-  },
-
-  custom: async ({ url, method, payload, query, headers }) => {
-    const searchParams = new URLSearchParams();
-
-    if (query) {
-      Object.entries(query).forEach(([key, value]) => {
-        if (value != null) {
-          searchParams.set(key, String(value));
-        }
-      });
-    }
-
-    const fullUrl = `${url}${
-      searchParams.size ? `?${searchParams.toString()}` : ""
-    }`;
-
-    const httpMethod = method?.toUpperCase() ?? "GET";
-    const shouldHaveBody = !["GET", "DELETE"].includes(httpMethod);
-
-    const response = await request<ApiOneResponse<unknown> | unknown>(fullUrl, {
-      method: httpMethod,
-      headers,
-      body: shouldHaveBody
-        ? payload instanceof FormData
-          ? payload
-          : JSON.stringify(payload ?? {})
-        : undefined,
-    });
-
-    if (typeof response === "object" && response && "data" in response) {
-      return {
-        data: (response as ApiOneResponse<unknown>).data,
-      };
-    }
-
-    return {
-      data: response,
-    };
-  },
-
-  getApiUrl: () => API_URL,
+type ConditionalCrudFilter = CrudFilter & {
+  key?: string;
+  operator: "or" | "and";
+  value: CrudFilter[];
 };
+
+function isConditionalFilter(
+  filter: CrudFilter,
+): filter is ConditionalCrudFilter {
+  return filter.operator === "or" || filter.operator === "and";
+}
+
+function isSerializedCrudFilter(
+  filter: SerializedCrudFilter | null,
+): filter is SerializedCrudFilter {
+  return filter !== null;
+}
+
+function normalizeQueryValue(value: unknown): unknown {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeQueryValue);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+        key,
+        normalizeQueryValue(item),
+      ]),
+    );
+  }
+
+  return value;
+}
+
+function isEmptyFilterValue(operator: string, value: unknown) {
+  if (operator === "null" || operator === "nnull") {
+    return false;
+  }
+
+  if (value === undefined || value === null || value === "") {
+    return true;
+  }
+
+  if (Array.isArray(value) && value.length === 0) {
+    return true;
+  }
+
+  return false;
+}
+
+function serializeFilter(filter: CrudFilter): SerializedCrudFilter | null {
+  if (isConditionalFilter(filter)) {
+    const value = Array.isArray(filter.value)
+      ? filter.value.map(serializeFilter).filter(isSerializedCrudFilter)
+      : [];
+
+    if (value.length === 0) {
+      return null;
+    }
+
+    return {
+      ...(filter.key ? { key: filter.key } : {}),
+      operator: filter.operator,
+      value,
+    };
+  }
+
+  if (!("field" in filter)) {
+    return null;
+  }
+
+  if (isEmptyFilterValue(filter.operator, filter.value)) {
+    return null;
+  }
+
+  return {
+    field: filter.field,
+    operator: filter.operator,
+    value: normalizeQueryValue(filter.value),
+  };
+}
+
+function buildFiltersParam(filters?: CrudFilter[]) {
+  const serializedFilters = filters
+    ?.map(serializeFilter)
+    .filter(isSerializedCrudFilter);
+
+  if (!serializedFilters?.length) {
+    return undefined;
+  }
+
+  return JSON.stringify(serializedFilters);
+}
+
+async function parseJson<T>(response: Response): Promise<T | undefined> {
+  if (response.status === 204) {
+    return undefined;
+  }
+
+  try {
+    return (await response.clone().json()) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+async function buildHttpError(response: Response): Promise<HttpError> {
+  let message = response.statusText || "Request failed.";
+
+  try {
+    const payload = (await response.clone().json()) as {
+      message?: string;
+      error?: string;
+      data?: {
+        message?: string;
+      };
+    };
+
+    message =
+      payload?.message ||
+      payload?.error ||
+      payload?.data?.message ||
+      response.statusText ||
+      message;
+  } catch {
+    try {
+      const text = await response.clone().text();
+      message = text || message;
+    } catch {
+      // ignore
+    }
+  }
+
+  return {
+    message,
+    statusCode: response.status,
+  };
+}
+
+async function assertOk(response: Response) {
+  if (!response.ok) {
+    throw await buildHttpError(response);
+  }
+}
+
+function getListData(payload?: ListResponse) {
+  return payload?.data ?? [];
+}
+
+function getListTotal(payload?: ListResponse) {
+  return payload?.pagination?.total ?? payload?.data?.length ?? 0;
+}
+
+function getOneData(payload?: GetOneResponse) {
+  return payload?.data ?? {};
+}
+
+function getCreateData(payload?: CreateResponse) {
+  return payload?.data ?? {};
+}
+
+function getResponseData(payload: unknown) {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return (payload as { data: unknown }).data;
+  }
+
+  return payload;
+}
+
+const options = {
+  getList: {
+    getEndpoint: ({ resource }) => resource,
+
+    buildQueryParams: async ({ pagination, filters, sorters, meta }) => {
+      const params: QueryParams = {};
+
+      if (pagination?.mode !== "off") {
+        params.page = pagination?.currentPage ?? 1;
+        params.pageSize = pagination?.pageSize ?? 10;
+      }
+
+      const filtersParam = buildFiltersParam(filters);
+
+      if (filtersParam) {
+        params[FILTERS_QUERY_KEY] = filtersParam;
+      }
+
+      if (sorters?.length) {
+        params.sort = sorters
+          .map((sorter) => `${sorter.field}:${sorter.order}`)
+          .join(",");
+      }
+
+      if (meta?.includeFields) {
+        params.includeFields = true;
+      }
+
+      return params;
+    },
+
+    mapResponse: async (response) => {
+      await assertOk(response);
+
+      const payload = await parseJson<ListResponse>(response);
+
+      return getListData(payload);
+    },
+
+    getTotalCount: async (response) => {
+      await assertOk(response);
+
+      const payload = await parseJson<ListResponse>(response);
+
+      return getListTotal(payload);
+    },
+
+    transformError: buildHttpError,
+  },
+
+  getOne: {
+    getEndpoint: ({ resource, id }) => `${resource}/${id}`,
+
+    mapResponse: async (response) => {
+      await assertOk(response);
+
+      const payload = await parseJson<GetOneResponse>(response);
+
+      return getOneData(payload);
+    },
+
+    transformError: buildHttpError,
+  },
+
+  create: {
+    getEndpoint: ({ resource }) => resource,
+
+    buildBodyParams: async ({ variables }) => variables,
+
+    mapResponse: async (response) => {
+      await assertOk(response);
+
+      const payload = await parseJson<CreateResponse>(response);
+
+      return getCreateData(payload);
+    },
+
+    transformError: buildHttpError,
+  },
+
+  update: {
+    getEndpoint: ({ resource, id }) => `${resource}/${id}`,
+
+    getRequestMethod: () => "patch",
+
+    buildBodyParams: async ({ variables }) => variables,
+
+    mapResponse: async (response) => {
+      await assertOk(response);
+
+      const payload = await parseJson<GetOneResponse>(response);
+
+      return getOneData(payload);
+    },
+
+    transformError: buildHttpError,
+  },
+
+  deleteOne: {
+    getEndpoint: ({ resource, id }) => `${resource}/${id}`,
+
+    mapResponse: async (response, params) => {
+      await assertOk(response);
+
+      const payload = await parseJson<GetOneResponse>(response);
+
+      return payload?.data ?? { id: params.id };
+    },
+
+    transformError: buildHttpError,
+  },
+
+  deleteMany: {
+    getEndpoint: ({ resource }) => resource,
+
+    buildQueryParams: async ({ ids }) => {
+      return {
+        ids: JSON.stringify(ids.map(String)),
+      };
+    },
+
+    mapResponse: async (response) => {
+      await assertOk(response);
+
+      const payload = await parseJson<ListResponse>(response);
+
+      return getListData(payload);
+    },
+
+    transformError: buildHttpError,
+  },
+
+  custom: {
+    buildHeaders: async ({ headers }) => {
+      return headers ?? {};
+    },
+
+    buildQueryParams: async ({ query }) => {
+      const params: QueryParams = {};
+
+      if (!query) {
+        return params;
+      }
+
+      Object.entries(query).forEach(([key, value]) => {
+        if (value === undefined || value === null) {
+          return;
+        }
+
+        const normalizedValue = normalizeQueryValue(value);
+
+        if (
+          Array.isArray(normalizedValue) ||
+          (normalizedValue && typeof normalizedValue === "object")
+        ) {
+          params[key] = JSON.stringify(normalizedValue);
+          return;
+        }
+
+        params[key] = String(normalizedValue);
+      });
+
+      return params;
+    },
+
+    buildBodyParams: async ({ payload }) => {
+      return payload;
+    },
+
+    mapResponse: async (response) => {
+      await assertOk(response);
+
+      const payload = await parseJson<unknown>(response);
+
+      return getResponseData(payload);
+    },
+
+    transformError: buildHttpError,
+  },
+} satisfies CreateDataProviderOptions;
+
+const { dataProvider } = createDataProvider(BACKEND_BASE_URL, options);
+
+export { dataProvider };

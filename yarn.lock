@@ -972,6 +972,7 @@ __metadata:
     "@refinedev/react-hook-form": "npm:^5.0.0"
     "@refinedev/react-router": "npm:^2.0.0"
     "@refinedev/react-table": "npm:^6.0.0"
+    "@refinedev/rest": "npm:^2.1.1"
     "@tailwindcss/vite": "npm:^4.1.12"
     "@tanstack/react-query": "npm:^5.84.1"
     "@tanstack/react-table": "npm:^8.21.3"
@@ -2614,6 +2615,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@refinedev/rest@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "@refinedev/rest@npm:2.1.1"
+  dependencies:
+    deepmerge: "npm:^4.3.1"
+    ky: "npm:^1.10.0"
+    qs: "npm:^6.10.1"
+  peerDependencies:
+    "@nestjsx/crud-request": ^5.0.0-alpha.3
+    "@refinedev/core": ^5.0.0
+  peerDependenciesMeta:
+    "@nestjsx/crud-request":
+      optional: true
+  checksum: 10c0/b92a94b1c4e8fe1aea069eb0c9ab52dfe03436eb564c98854051a8ab557ce5002d08aecd36e49dd32308d81c1fda298ebf1b27686653cf43425c1011d7bd17b8
+  languageName: node
+  linkType: hard
+
 "@rolldown/pluginutils@npm:1.0.0-rc.3":
   version: 1.0.0-rc.3
   resolution: "@rolldown/pluginutils@npm:1.0.0-rc.3"
@@ -3704,6 +3722,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"deepmerge@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "deepmerge@npm:4.3.1"
+  checksum: 10c0/e53481aaf1aa2c4082b5342be6b6d8ad9dfe387bc92ce197a66dea08bd4265904a087e75e464f14d1347cf2ac8afe1e4c16b266e0561cc5df29382d3c5f80044
+  languageName: node
+  linkType: hard
+
 "depd@npm:^2.0.0, depd@npm:~2.0.0":
   version: 2.0.0
   resolution: "depd@npm:2.0.0"
@@ -4537,6 +4562,13 @@ __metadata:
     react: ^16.0.0 || ^17.0.0 || ^18.0.0
     react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0
   checksum: 10c0/87fad09253d799ffc1a50c396d95a517c3037201d0d63f420ae21ef72f1146e43bb88eff2d07024d8a56508dcf968b709bcce42dd30b5e4e34b7a9db122ce38c
+  languageName: node
+  linkType: hard
+
+"ky@npm:^1.10.0":
+  version: 1.14.3
+  resolution: "ky@npm:1.14.3"
+  checksum: 10c0/8e91c9512c8f1501201108ad58ed437eaf3f5b0a0da842bd846d785932426e84a31cf51d0fffce1921d4e70e26465a9b2b89ed2477822975568258a1fa68a740
   languageName: node
   linkType: hard
 

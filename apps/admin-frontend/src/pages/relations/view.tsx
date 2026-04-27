@@ -1,11 +1,5 @@
-// apps/admin-frontend/src/pages/relations/RelationsGraphPage.tsx
-import { useMemo, useState } from "react";
-import {
-  Background,
-  Controls,
-  MiniMap,
-  ReactFlow,
-} from "@xyflow/react";
+import { useCallback, useMemo, useState } from "react";
+import { Background, Controls, MiniMap, ReactFlow } from "@xyflow/react";
 import { useApiUrl, useCustom } from "@refinedev/core";
 import { EyeOff, GitBranch, Loader2, RotateCcw, Search } from "lucide-react";
 
@@ -19,10 +13,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import type { RelationGraphResponse, RelationGraphTable } from "@/types/relations.types";
-import { TableNode } from "./components/TableNode";
-import { RelationEdge } from "./components/RelationEdge";
-import { useElkRelationsGraph } from "@/lib/use-elk-relations-graph";
+import type {
+  RelationGraphResponse,
+  RelationGraphTable,
+} from "@/types/relations.types";
+import { TableNode } from "@/components/elk-graph/TableNode";
+import { RelationEdge } from "@/components/elk-graph/RelationEdge";
+import {
+  useElkRelationsGraph,
+  type RelationsGraphFocus,
+} from "@/lib/use-elk-relations-graph";
 
 const nodeTypes = {
   tableNode: TableNode,
@@ -63,7 +63,7 @@ function getTableRelationCount(
 export function RelationsGraphPage() {
   const apiUrl = useApiUrl();
 
-  const [activeRelationId, setActiveRelationId] = useState<string | null>(null);
+  const [activeFocus, setActiveFocus] = useState<RelationsGraphFocus>(null);
   const [hiddenTableNames, setHiddenTableNames] = useState<Set<string>>(
     () => new Set(),
   );
@@ -77,13 +77,32 @@ export function RelationsGraphPage() {
   });
 
   const response = data?.data ?? null;
+  const hasGraphFocus = activeFocus !== null;
+
+  const focusRelation = useCallback((relationId: string) => {
+    setActiveFocus({
+      type: "relation",
+      relationId,
+    });
+  }, []);
+
+  const focusTable = useCallback((tableName: string) => {
+    setActiveFocus({
+      type: "table",
+      tableName,
+    });
+  }, []);
+
+  const resetFocus = useCallback(() => {
+    setActiveFocus(null);
+  }, []);
 
   const graph = useElkRelationsGraph({
     response,
     hiddenTableNames,
-    activeRelationId,
-    onFocusRelation: setActiveRelationId,
-    onBlurRelation: () => setActiveRelationId(null),
+    activeFocus,
+    onFocusRelation: focusRelation,
+    onFocusTable: focusTable,
   });
 
   const relationTableNames = useMemo(
@@ -135,12 +154,17 @@ export function RelationsGraphPage() {
       return next;
     });
 
-    setActiveRelationId(null);
+    resetFocus();
   }
 
   function showAllTables() {
     setHiddenTableNames(new Set());
-    setActiveRelationId(null);
+    resetFocus();
+  }
+
+  function handleGraphContextMenu(event: React.MouseEvent<HTMLDivElement>) {
+    event.preventDefault();
+    resetFocus();
   }
 
   if (isLoading) {
@@ -185,8 +209,8 @@ export function RelationsGraphPage() {
           <div>
             <h1 className="text-xl font-semibold">Связи таблиц</h1>
             <p className="text-sm text-muted-foreground">
-              ELK разводит таблицы и связи по field handles. Наведи на связь,
-              чтобы приглушить всё лишнее.
+              Наведи на связь или таблицу. Сброс выделения — правой кнопкой
+              мыши.
             </p>
           </div>
         </div>
@@ -284,7 +308,10 @@ export function RelationsGraphPage() {
         </div>
       </div>
 
-      <div className="h-[880px] w-full bg-muted/20">
+      <div
+        className="h-[880px] w-full bg-muted/20"
+        onContextMenu={handleGraphContextMenu}
+      >
         <ReactFlow
           nodes={graph.nodes}
           edges={graph.edges}
@@ -297,9 +324,11 @@ export function RelationsGraphPage() {
           }}
           minZoom={0.12}
           maxZoom={1.5}
+          panOnDrag={!hasGraphFocus}
+          zoomOnDoubleClick={!hasGraphFocus}
           nodesDraggable={false}
           nodesConnectable={false}
-          edgesFocusable
+          edgesFocusable={false}
           elementsSelectable={false}
           proOptions={{
             hideAttribution: true,

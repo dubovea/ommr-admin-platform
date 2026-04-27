@@ -13,7 +13,10 @@ type ExportFieldRelation = Omit<
   "targetTableId"
 > | null;
 
-type ExportFieldMeta = Pick<AdminFieldMeta, "name" | "label" | "inputType"> & {
+type ExportFieldMeta = Pick<
+  AdminFieldMeta,
+  "name" | "label" | "inputType" | "visible" | "editable" | "required"
+> & {
   relation: ExportFieldRelation;
 };
 
@@ -44,6 +47,9 @@ metadataRouter.get(
         fieldName: adminFields.name,
         fieldLabel: adminFields.label,
         fieldInputType: adminFields.inputType,
+        fieldVisible: adminFields.visible,
+        fieldRequired: adminFields.required,
+        fieldEditable: adminFields.editable,
         fieldRelation: adminFields.relation,
       })
       .from(adminTables)
@@ -74,6 +80,9 @@ metadataRouter.get(
           name: row.fieldName ?? "",
           label: row.fieldLabel ?? "",
           inputType: row.fieldInputType!,
+          visible: row.fieldVisible ?? true,
+          required: row.fieldRequired ?? false,
+          editable: row.fieldEditable ?? true,
           relation: toExportRelation(row.fieldRelation),
         });
       }

@@ -1,4 +1,3 @@
-// apps/admin-frontend/src/pages/relations/lib/use-elk-relations-graph.ts
 import { useEffect, useMemo, useState } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
@@ -7,14 +6,15 @@ import type {
   RelationGraphRelation,
   RelationGraphResponse,
   RelationGraphTable,
-} from "../types";
-import type { TableNodeData } from "../components/TableNode";
-import type { RelationEdgeData, RelationEdgePoint } from "../components/RelationEdge";
+} from "@/types/relations.types";
+import type { TableNodeData } from "@/components/elk-graph/TableNode";
+import type {
+  RelationEdgeData,
+  RelationEdgePoint,
+} from "@/components/elk-graph/RelationEdge";
 import {
-  FIELD_ROW_HEIGHT,
   getFieldCenterY,
   getGraphFields,
-  getHiddenFieldsCount,
   getNodeHeight,
   getSourceHandle,
   getTableSourceFields,
@@ -22,6 +22,17 @@ import {
   getTargetHandle,
   NODE_WIDTH,
 } from "./relation-graph-model";
+
+export type RelationsGraphFocus =
+  | {
+      type: "relation";
+      relationId: string;
+    }
+  | {
+      type: "table";
+      tableName: string;
+    }
+  | null;
 
 type ElkPort = {
   id: string;
@@ -78,6 +89,12 @@ type ElkLayoutedGraph = ElkGraph & {
   edges: ElkEdgeShape[];
 };
 
+type FocusState = {
+  hasFocus: boolean;
+  relationIds: Set<string>;
+  tableNames: Set<string>;
+};
+
 const elk = new ELK();
 
 const EDGE_COLORS = [
@@ -111,7 +128,8 @@ function getVisibleData(params: {
   );
 
   const tables = response.tables.filter(
-    (table) => !hiddenTableNames.has(table.name) && relatedTableNames.has(table.name),
+    (table) =>
+      !hiddenTableNames.has(table.name) && relatedTableNames.has(table.name),
   );
 
   return {
@@ -131,11 +149,7 @@ function getEdgePoints(edge: ElkEdgeShape): RelationEdgePoint[] {
     return [];
   }
 
-  return [
-    section.startPoint,
-    ...(section.bendPoints ?? []),
-    section.endPoint,
-  ];
+  return [section.startPoint, ...(section.bendPoints ?? []), section.endPoint];
 }
 
 function getPortIndex(params: {
@@ -221,18 +235,11 @@ function buildElkGraph(params: {
       "elk.direction": "RIGHT",
       "elk.edgeRouting": "ORTHOGONAL",
 
-      /**
-       * Эти настройки сильно важнее ручных отступов:
-       * ELK пытается минимизировать пересечения и разводить линии по каналам.
-       */
       "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
       "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
 
-      /**
-       * Отступы умеренные: не огромные, но достаточно, чтобы линии не были кашей.
-       */
       "elk.spacing.nodeNode": "70",
       "elk.spacing.edgeEdge": "24",
       "elk.spacing.edgeNode": "36",
@@ -241,10 +248,6 @@ function buildElkGraph(params: {
       "elk.layered.spacing.edgeNodeBetweenLayers": "44",
       "elk.layered.spacing.edgeEdgeBetweenLayers": "30",
 
-      /**
-       * Когда много входящих связей в один target, это помогает не сваливать
-       * всё в один вертикальный пучок.
-       */
       "elk.layered.mergeEdges": "false",
       "elk.layered.feedbackEdges": "true",
       "elk.layered.unnecessaryBendpoints": "true",
@@ -279,41 +282,80 @@ function buildElkGraph(params: {
   };
 }
 
-function getHighlightedTableNames(
+function getFocusState(
   relations: RelationGraphRelation[],
-  activeRelationId: string | null,
-) {
-  if (!activeRelationId) {
-    return new Set<string>();
+  activeFocus: RelationsGraphFocus,
+): FocusState {
+  if (!activeFocus) {
+    return {
+      hasFocus: false,
+      relationIds: new Set(),
+      tableNames: new Set(),
+    };
   }
 
-  const activeRelation = relations.find(
-    (relation) => relation.id === activeRelationId,
+  if (activeFocus.type === "relation") {
+    const relation = relations.find(
+      (item) => item.id === activeFocus.relationId,
+    );
+
+    if (!relation) {
+      return {
+        hasFocus: false,
+        relationIds: new Set(),
+        tableNames: new Set(),
+      };
+    }
+
+    return {
+      hasFocus: true,
+      relationIds: new Set([relation.id]),
+      tableNames: new Set([
+        relation.sourceTable.name,
+        relation.targetTable.name,
+      ]),
+    };
+  }
+
+  const connectedRelations = relations.filter(
+    (relation) =>
+      relation.sourceTable.name === activeFocus.tableName ||
+      relation.targetTable.name === activeFocus.tableName,
   );
 
-  if (!activeRelation) {
-    return new Set<string>();
+  if (connectedRelations.length === 0) {
+    return {
+      hasFocus: true,
+      relationIds: new Set(),
+      tableNames: new Set([activeFocus.tableName]),
+    };
   }
 
-  return new Set([
-    activeRelation.sourceTable.name,
-    activeRelation.targetTable.name,
-  ]);
+  return {
+    hasFocus: true,
+    relationIds: new Set(connectedRelations.map((relation) => relation.id)),
+    tableNames: new Set(
+      connectedRelations.flatMap((relation) => [
+        relation.sourceTable.name,
+        relation.targetTable.name,
+      ]),
+    ),
+  };
 }
 
 export function useElkRelationsGraph(params: {
   response: RelationGraphResponse | null;
   hiddenTableNames: Set<string>;
-  activeRelationId: string | null;
+  activeFocus: RelationsGraphFocus;
   onFocusRelation: (relationId: string) => void;
-  onBlurRelation: () => void;
+  onFocusTable: (tableName: string) => void;
 }) {
   const {
     response,
     hiddenTableNames,
-    activeRelationId,
+    activeFocus,
     onFocusRelation,
-    onBlurRelation,
+    onFocusTable,
   } = params;
 
   const [isLayouting, setIsLayouting] = useState(false);
@@ -385,16 +427,13 @@ export function useElkRelationsGraph(params: {
       layoutedGraph.edges.map((edge) => [edge.id, edge]),
     );
 
-    const highlightedTableNames = getHighlightedTableNames(
-      visibleData.relations,
-      activeRelationId,
-    );
+    const focusState = getFocusState(visibleData.relations, activeFocus);
 
     const nodes: Node<TableNodeData>[] = visibleData.tables.map((table) => {
       const layoutedNode = layoutedNodeById.get(table.name);
 
-      const isHighlighted = highlightedTableNames.has(table.name);
-      const isDimmed = activeRelationId !== null && !isHighlighted;
+      const isHighlighted = focusState.tableNames.has(table.name);
+      const isDimmed = focusState.hasFocus && !isHighlighted;
 
       return {
         id: table.name,
@@ -408,6 +447,7 @@ export function useElkRelationsGraph(params: {
           relations: visibleData.relations,
           isDimmed,
           isHighlighted,
+          onFocusTable,
         },
         draggable: false,
         selectable: false,
@@ -419,8 +459,8 @@ export function useElkRelationsGraph(params: {
         const color = EDGE_COLORS[index % EDGE_COLORS.length];
         const layoutedEdge = layoutedEdgeById.get(relation.id);
 
-        const isHighlighted = activeRelationId === relation.id;
-        const isDimmed = activeRelationId !== null && !isHighlighted;
+        const isHighlighted = focusState.relationIds.has(relation.id);
+        const isDimmed = focusState.hasFocus && !isHighlighted;
 
         return {
           id: relation.id,
@@ -445,7 +485,6 @@ export function useElkRelationsGraph(params: {
             isDimmed,
             isHighlighted,
             onFocusRelation,
-            onBlurRelation,
           },
         };
       },
@@ -460,9 +499,9 @@ export function useElkRelationsGraph(params: {
   }, [
     layoutedGraph,
     visibleData,
-    activeRelationId,
+    activeFocus,
     onFocusRelation,
-    onBlurRelation,
+    onFocusTable,
   ]);
 
   return {

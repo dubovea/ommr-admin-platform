@@ -113,6 +113,16 @@ export function TableListPage() {
   const { edit } = useNavigation();
   const [previewTableId, setPreviewTableId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchFilters = searchQuery
+    ? [
+        {
+          field: "name",
+          operator: "contains" as const,
+          value: searchQuery,
+        },
+      ]
+    : [];
 
   const {
     rowSelection,
@@ -323,6 +333,9 @@ export function TableListPage() {
       pagination: {
         mode: "client",
       },
+      filters: {
+        permanent: [...searchFilters],
+      },
     },
   });
 
@@ -394,8 +407,9 @@ export function TableListPage() {
               </div>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Импортированы только базовые свойства: имена, поля, типы и связи из x-relation.
-                Остальные настройки задаются в интерфейсе и влияют на отображение таблиц в OMMR приложении.
+                Импортированы только базовые свойства: имена, поля, типы и связи
+                из x-relation. Остальные настройки задаются в интерфейсе и
+                влияют на отображение таблиц в OMMR приложении.
               </p>
             </div>
           </CardContent>
@@ -407,6 +421,8 @@ export function TableListPage() {
             <Input
               className="pl-9"
               placeholder="Поиск по названию таблицы..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
@@ -519,9 +535,7 @@ export function TableListPage() {
         description={
           <>
             Вы собираетесь удалить{" "}
-            <span className="font-medium text-foreground">
-              {selectedCount}
-            </span>{" "}
+            <span className="font-medium text-foreground">{selectedCount}</span>{" "}
             {pluralizeRu(selectedCount, ["таблицу", "таблицы", "таблиц"])}. Это
             действие нельзя будет отменить.
           </>
