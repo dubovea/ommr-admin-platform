@@ -236,6 +236,10 @@ export type CreateAdminTableInput = Pick<AdminTableMeta, "name" | "label"> &
       | "source"
       | "icon"
       | "showInMenu"
+      | "canList"
+      | "canCreate"
+      | "canEdit"
+      | "canDelete"
     >
   >;
 
@@ -343,7 +347,10 @@ export type NormalizedUpdateAdminFieldPayload = Omit<
   relationTargetTableId?: string | null;
 };
 
-export type MetadataExportRelation = Omit<FieldRelationMeta, "targetTableId"> | null;
+export type MetadataExportRelation = Omit<
+  FieldRelationMeta,
+  "targetTableId"
+> | null;
 
 export type MetadataExportField = Pick<
   AdminFieldMeta,
@@ -352,12 +359,10 @@ export type MetadataExportField = Pick<
   relation: MetadataExportRelation;
 };
 
-export type MetadataExportTable = Pick<
-  AdminTableMeta,
-  "name" | "label" | "group" | "groupName" | "showInMenu"
-> & {
-  fields: MetadataExportField[];
-};
+export type MetadataExportTable = Pick<AdminTableMeta, "name" | "label"> &
+  Partial<Pick<AdminTableMeta, "group" | "groupName" | "showInMenu">> & {
+    fields: MetadataExportField[];
+  };
 
 export type MetadataExportMenuItem = {
   id: string;

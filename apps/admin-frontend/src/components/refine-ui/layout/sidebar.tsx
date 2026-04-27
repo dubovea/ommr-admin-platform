@@ -1,11 +1,4 @@
-import {
-  Boxes,
-  Database,
-  LayoutDashboard,
-  Link2,
-  Settings,
-  Table2,
-} from "lucide-react";
+import { Boxes, Database, LayoutDashboard, Link2, Table2 } from "lucide-react";
 import { NavLink } from "react-router";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -14,7 +7,6 @@ const nav = [
   ["Таблицы", Table2, "/tables"],
   ["Связи", Link2, "/relations"],
   ["Схемы", Boxes, "/schemas"],
-  ["Настройки", Settings, "/settings"],
 ] as const;
 export function Sidebar() {
   return (
@@ -34,7 +26,7 @@ export function Sidebar() {
             className={({ isActive }) =>
               cn(
                 "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
-                (isActive || label === "Таблицы") &&
+                isActive &&
                   "bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700",
               )
             }

@@ -49,13 +49,13 @@ import {
   getLeafRowsSelectionState,
   toggleLeafRowsSelected,
 } from "@/lib/tanstack-selection";
-import { getTableGroupLabel } from "./table-groups";
+import { getTableGroupLabel } from "@/lib/table-groups";
 import {
   getSourceBadgeClassName,
   getStatusDotClassName,
   SOURCE_FILTER_OPTIONS,
   STATUS_FILTER_OPTIONS,
-} from "./table-list-config";
+} from "@/lib/table-list-config";
 
 function SourceBadge({ source }: { source: AdminTableSource }) {
   const label = ADMIN_TABLE_SOURCE_LABELS[source];
@@ -88,7 +88,6 @@ function StatusInlineBadge({ status }: { status: AdminTableStatus }) {
     </div>
   );
 }
-
 
 export function TableListPage() {
   const { edit } = useNavigation();
@@ -203,9 +202,9 @@ export function TableListPage() {
             <div className="flex items-center gap-3">
               <Button
                 type="button"
-                variant={isPreviewActive ? "secondary" : "ghost"}
+                variant="ghost"
                 size="icon"
-                className="size-9 shrink-0 cursor-pointer"
+                className="size-9 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
                 onClick={(event) => {
                   event.stopPropagation();
                   setPreviewTableId(row.original.id);
@@ -218,11 +217,23 @@ export function TableListPage() {
               </Button>
 
               <div className="min-w-0">
-                <strong className="block truncate">
+                <strong
+                  className={
+                    isPreviewActive
+                      ? "block truncate font-semibold text-primary"
+                      : "block truncate"
+                  }
+                >
                   {row.original.label || row.original.name}
                 </strong>
 
-                <span className="block truncate text-xs text-muted-foreground">
+                <span
+                  className={
+                    isPreviewActive
+                      ? "block truncate text-xs font-medium text-primary/70"
+                      : "block truncate text-xs text-muted-foreground"
+                  }
+                >
                   {row.original.name}
                 </span>
               </div>
@@ -472,6 +483,11 @@ export function TableListPage() {
         <DataTable
           table={table}
           onRowClick={(row) => setPreviewTableId(row.id)}
+          getRowClassName={(row) =>
+            row.id === previewTableId
+              ? "bg-blue-50/80 hover:bg-blue-100/70 shadow-[inset_4px_0_0_#2563eb]"
+              : undefined
+          }
         />
       </ListView>
 

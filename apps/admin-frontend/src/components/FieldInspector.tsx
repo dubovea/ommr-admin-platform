@@ -54,7 +54,7 @@ export function FieldInspector({
   const relationControlsDisabled = isUpdating || isRelationUpdating;
 
   const [defaultValueText, setDefaultValueText] = useState(() =>
-    toPrettyJson(field.defaultValue ?? null),
+    toPrettyJson(field.defaultValue ?? ""),
   );
   const [optionsText, setOptionsText] = useState(() =>
     toPrettyJson(field.options ?? []),

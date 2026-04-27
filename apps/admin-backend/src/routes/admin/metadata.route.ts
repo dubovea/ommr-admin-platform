@@ -13,10 +13,6 @@ import { adminFields, adminTables } from "../../db/schema.js";
 
 export const metadataRouter = Router();
 
-type ExportTableMeta = MetadataExportTable;
-
-type ExportMenuGroup = MetadataExportMenuGroup;
-
 type TableRowForExport = {
   tableId: string;
   tableName: string;
@@ -46,16 +42,16 @@ function toExportRelation(relation: AdminFieldMeta["relation"]) {
   return exportRelation;
 }
 
-function getMenuGroupId(table: ExportTableMeta) {
+function getMenuGroupId(table: MetadataExportTable) {
   return table.group || "ungrouped";
 }
 
-function getMenuGroupLabel(table: ExportTableMeta) {
+function getMenuGroupLabel(table: MetadataExportTable) {
   return table.groupName || table.group || "Без группы";
 }
 
-function buildMenu(tables: ExportTableMeta[]): ExportMenuGroup[] {
-  const groupsMap = new Map<string, ExportMenuGroup>();
+function buildMenu(tables: MetadataExportTable[]): MetadataExportMenuGroup[] {
+  const groupsMap = new Map<string, MetadataExportMenuGroup>();
 
   for (const table of tables) {
     if (!table.showInMenu) {
@@ -92,7 +88,7 @@ function buildMenu(tables: ExportTableMeta[]): ExportMenuGroup[] {
 }
 
 function buildMetadataExport(rows: TableRowForExport[]): MetadataExport {
-  const tablesMap = new Map<string, ExportTableMeta>();
+  const tablesMap = new Map<string, MetadataExportTable>();
 
   for (const row of rows) {
     let table = tablesMap.get(row.tableId);

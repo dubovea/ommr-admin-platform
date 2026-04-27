@@ -7,15 +7,18 @@ import routerProvider, {
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
-import { ErrorComponent } from "./components/refine-ui/layout/error-component";
-import { Layout } from "./components/refine-ui/layout/layout";
-import { Toaster } from "./components/refine-ui/notification/toaster";
-import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
-import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
-import { TableCreatePage, TableEditPage, TableListPage } from "./pages/table";
-import { dataProvider } from "./providers/data";
-import { GraphNodesDB } from "./pages/schemas";
-import { RelationsGraphPage } from "./pages/relations/view";
+
+import { ErrorComponent } from "@/components/refine-ui/layout/error-component";
+import { Layout } from "@/components/refine-ui/layout/layout";
+import { Toaster } from "@/components/refine-ui/notification/toaster";
+import { useNotificationProvider } from "@/components/refine-ui/notification/use-notification-provider";
+import { ThemeProvider } from "@/components/refine-ui/theme/theme-provider";
+
+import { TableCreatePage, TableEditPage, TableListPage } from "@/pages/table";
+import { dataProvider } from "@/providers/data";
+import { GraphNodesDB } from "@/pages/schemas";
+import { RelationsGraphPage } from "@/pages/relations/view";
+import { OverviewPage } from "@/pages/overview/view";
 
 const enableDevtools = import.meta.env.VITE_REFINE_DEVTOOLS === "true";
 
@@ -27,19 +30,42 @@ function RefineApp() {
       routerProvider={routerProvider}
       resources={[
         {
+          name: "overview",
+          list: "/overview",
+          meta: {
+            label: "Обзор",
+          },
+        },
+        {
           name: "tables",
           list: "/tables",
           create: "/tables/create",
           edit: "/tables/edit/:id",
           show: "/tables/show/:id",
-          meta: { canDelete: true, label: "Таблицы" },
+          meta: {
+            canDelete: true,
+            label: "Таблицы",
+          },
         },
-        { name: "fields", meta: { label: "Поля" } },
-        { name: "schemas", list: "/schemas", meta: { label: "Схема БД" } },
+        {
+          name: "fields",
+          meta: {
+            label: "Поля",
+          },
+        },
+        {
+          name: "schemas",
+          list: "/schemas",
+          meta: {
+            label: "Схема БД",
+          },
+        },
         {
           name: "relations",
           list: "/relations",
-          meta: { label: "Связи" },
+          meta: {
+            label: "Связи",
+          },
         },
       ]}
       options={{
@@ -56,22 +82,20 @@ function RefineApp() {
             </Layout>
           }
         >
-          <Route index element={<NavigateToResource resource="tables" />} />
+          <Route index element={<NavigateToResource resource="overview" />} />
 
-          <Route path="/tables">
+          <Route path="overview" element={<OverviewPage />} />
+
+          <Route path="tables">
             <Route index element={<TableListPage />} />
             <Route path="list" element={<TableListPage />} />
             <Route path="create" element={<TableCreatePage />} />
             <Route path="edit/:id" element={<TableEditPage />} />
           </Route>
 
-          <Route path="/schemas">
-            <Route index element={<GraphNodesDB />} />
-          </Route>
+          <Route path="schemas" element={<GraphNodesDB />} />
 
-          <Route path="/relations">
-            <Route index element={<RelationsGraphPage />} />
-          </Route>
+          <Route path="relations" element={<RelationsGraphPage />} />
 
           <Route path="*" element={<ErrorComponent />} />
         </Route>
@@ -103,4 +127,5 @@ function App() {
     </BrowserRouter>
   );
 }
+
 export default App;

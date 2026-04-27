@@ -1,11 +1,12 @@
 import { Controller } from "react-hook-form";
 import { useParams } from "react-router";
 import { useCreate } from "@refinedev/core";
-import type {
-  AdminFieldMeta,
-  AdminTableActionKey,
-  CreateAdminFieldInput,
-  UpdateAdminTableInput,
+import {
+  ADMIN_TABLE_GROUP_OPTIONS,
+  type AdminFieldMeta,
+  type AdminTableActionKey,
+  type CreateAdminFieldInput,
+  type UpdateAdminTableInput,
 } from "@ommr/shared";
 
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ import { LoadingBanner } from "@/components/LoadingBanner";
 import { pluralizeRu } from "@/lib/ru-plural";
 import { FieldInspector } from "@/components/FieldInspector";
 import { useTableEditPage } from "@/hooks/use-table-edit-page";
-import { EMPTY_GROUP_VALUE, TABLE_GROUP_OPTIONS } from "./table-groups";
+import { EMPTY_GROUP_VALUE } from "@/lib/table-groups";
 
 export function TableEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -157,7 +158,7 @@ export function TableEditPage() {
                     <FormLabel>Имя таблицы в БД *</FormLabel>
                     <Input {...register("name")} />
 
-                    <FormLabel>Группа меню</FormLabel>
+                    <FormLabel>Группировка таблицы</FormLabel>
                     <Controller
                       name="group"
                       control={control}
@@ -182,7 +183,7 @@ export function TableEditPage() {
                               return;
                             }
 
-                            const selectedGroup = TABLE_GROUP_OPTIONS.find(
+                            const selectedGroup = ADMIN_TABLE_GROUP_OPTIONS.find(
                               (group) => group.id === value,
                             );
 
@@ -210,7 +211,7 @@ export function TableEditPage() {
                               Без группы
                             </SelectItem>
 
-                            {TABLE_GROUP_OPTIONS.map((group) => (
+                            {ADMIN_TABLE_GROUP_OPTIONS.map((group) => (
                               <SelectItem key={group.id} value={group.id}>
                                 {group.label}
                               </SelectItem>
@@ -356,7 +357,9 @@ export function TableEditPage() {
                 <CardContent>
                   <DataTable
                     table={tableEdit.fieldsTable as any}
-                    onRowClick={(row) => tableEdit.setActiveFieldId(row.id ? String(row.id) : null)}
+                    onRowClick={(row) =>
+                      tableEdit.setActiveFieldId(row.id ? String(row.id) : null)
+                    }
                   />
                 </CardContent>
               </Card>

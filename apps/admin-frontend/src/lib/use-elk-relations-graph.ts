@@ -113,8 +113,7 @@ function getVisibleData(params: {
   hiddenTableNames: Set<string>;
 }) {
   const { response, hiddenTableNames } = params;
-
-  const relations = response.relations.filter(
+  const relations = response?.data?.relations.filter(
     (relation) =>
       !hiddenTableNames.has(relation.sourceTable.name) &&
       !hiddenTableNames.has(relation.targetTable.name),
@@ -127,7 +126,7 @@ function getVisibleData(params: {
     ]),
   );
 
-  const tables = response.tables.filter(
+  const tables = response?.data?.tables.filter(
     (table) =>
       !hiddenTableNames.has(table.name) && relatedTableNames.has(table.name),
   );

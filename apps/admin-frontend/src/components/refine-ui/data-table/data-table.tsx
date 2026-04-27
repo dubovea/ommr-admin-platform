@@ -21,10 +21,12 @@ import { cn } from "@/lib/utils";
 type DataTableProps<TData extends BaseRecord> = {
   table: UseTableReturnType<TData, HttpError>;
   onRowClick?: (row: TData) => void;
+  getRowClassName?: (row: TData) => string | undefined;
 };
 
 export function DataTable<TData extends BaseRecord>({
   table,
+  getRowClassName,
   onRowClick,
 }: DataTableProps<TData>) {
   const {
@@ -174,6 +176,7 @@ export function DataTable<TData extends BaseRecord>({
                   isOverflowing={isOverflowing}
                   visibleColumnsCount={visibleColumnsCount}
                   onRowClick={onRowClick}
+                  getRowClassName={getRowClassName}
                 />
               ))
             ) : (
@@ -205,6 +208,7 @@ function DataTableBodyRow<TData extends BaseRecord>({
   isOverflowing,
   visibleColumnsCount,
   onRowClick,
+  getRowClassName,
 }: {
   row: Row<TData>;
   isOverflowing: {
@@ -213,6 +217,7 @@ function DataTableBodyRow<TData extends BaseRecord>({
   };
   visibleColumnsCount: number;
   onRowClick?: (row: TData) => void;
+  getRowClassName?: (row: TData) => string | undefined;
 }) {
   if (row.getIsGrouped()) {
     const groupValue = getGroupedRowValue(row);
@@ -251,6 +256,7 @@ function DataTableBodyRow<TData extends BaseRecord>({
         onRowClick && "cursor-pointer",
         row.getIsSelected() &&
           "bg-blue-50 hover:bg-blue-50 shadow-[inset_3px_0_0_#2563eb]",
+        getRowClassName?.(row.original),
       )}
       onClick={() => onRowClick?.(row.original)}
     >
@@ -274,9 +280,7 @@ function DataTableBodyRow<TData extends BaseRecord>({
 }
 
 function getGroupedRowValue<TData extends BaseRecord>(row: Row<TData>) {
-  const groupedCell = row
-    .getVisibleCells()
-    .find((cell) => cell.getIsGrouped());
+  const groupedCell = row.getVisibleCells().find((cell) => cell.getIsGrouped());
 
   const groupingColumnId = row.groupingColumnId;
   const value =

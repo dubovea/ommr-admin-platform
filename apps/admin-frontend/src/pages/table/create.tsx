@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Controller } from "react-hook-form";
 import {
   type HttpError,
@@ -23,6 +23,7 @@ import type {
   FieldValidationMeta,
 } from "@ommr/shared";
 import {
+  ADMIN_TABLE_GROUP_OPTIONS,
   ADMIN_TABLE_SOURCE_LABELS,
   ADMIN_TABLE_SOURCES,
   ADMIN_TABLE_STATUS_LABELS,
@@ -48,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { LoadingBanner } from "@/components/LoadingBanner";
 import { FieldInspector } from "@/components/FieldInspector";
 
@@ -57,9 +59,11 @@ type TableCreateValues = CreateAdminTableInput & {
   canEdit: boolean;
   canDelete: boolean;
   description: string;
-  icon: string;
   status: AdminTableMeta["status"];
   source: AdminTableMeta["source"];
+  group: string | null;
+  groupName: string | null;
+  showInMenu: boolean;
 };
 
 type FieldDraft = Omit<CreateAdminFieldInput, "tableId"> & {
@@ -70,6 +74,8 @@ type FieldDraft = Omit<CreateAdminFieldInput, "tableId"> & {
 };
 
 const NEW_TABLE_TEMP_ID = "__new_table__";
+const EMPTY_GROUP_VALUE = "__empty_group__";
+
 const DEFAULT_OPTIONS_JSON = "[]";
 const DEFAULT_VALUE_JSON = "null";
 
@@ -83,10 +89,10 @@ function createFieldDraft(index = 1): FieldDraft {
     inputType: "text",
 
     required: false,
-    editable: false,
-    sortable: false,
-    filterable: false,
-    visible: false,
+    editable: true,
+    sortable: true,
+    filterable: true,
+    visible: true,
 
     group: null,
     placeholder: null,
@@ -132,13 +138,6 @@ function draftToInspectorField(field: FieldDraft): AdminFieldMeta {
     placeholder: field.placeholder ?? null,
     helpText: field.helpText ?? null,
 
-    /**
-     * В create-режиме relation ещё может быть неполной:
-     * например { targetTableId }.
-     *
-     * FieldInspector умеет работать с такой relation,
-     * потому что backend потом достроит её до FieldRelationMeta.
-     */
     relation: field.relation as AdminFieldMeta["relation"],
 
     sortOrder: field.sortOrder,
@@ -165,6 +164,9 @@ export function TableCreatePage() {
 
   const { query: tablesListData } = useList<AdminTableMeta>({
     resource: "tables",
+    pagination: {
+      mode: "off",
+    },
     meta: {
       includeFields: true,
     },
@@ -194,9 +196,13 @@ export function TableCreatePage() {
       name: "",
       label: "",
       description: "",
-      icon: "table",
       status: "draft",
       source: "manual",
+
+      group: null,
+      groupName: null,
+      showInMenu: true,
+
       canList: true,
       canCreate: true,
       canEdit: true,
@@ -301,12 +307,20 @@ export function TableCreatePage() {
 
     try {
       const createdTable = await createTableAsync({
-        name: values.name,
-        label: values.label,
+        name: values.name.trim(),
+        label: values.label.trim(),
         description: values.description || null,
         status: values.status,
         source: values.source,
-        icon: values.icon || "table",
+
+        group: values.group ?? null,
+        groupName: values.groupName ?? null,
+        showInMenu: values.showInMenu ?? true,
+
+        canList: values.canList,
+        canCreate: values.canCreate,
+        canEdit: values.canEdit,
+        canDelete: values.canDelete,
       });
 
       for (const [index, field] of fields.entries()) {
@@ -346,7 +360,7 @@ export function TableCreatePage() {
           filterable: Boolean(field.filterable),
           visible: Boolean(field.visible),
 
-          group: null,
+          group: field.group ?? null,
 
           defaultValue,
           options,
@@ -355,12 +369,7 @@ export function TableCreatePage() {
           placeholder: field.placeholder || null,
           helpText: field.helpText || null,
 
-          /**
-           * Relation может быть неполной.
-           * Backend сам достроит targetTable/targetKey/displayField
-           * и заполнит relationTargetTableId.
-           */
-          relation: field.relation ?? null,
+          relation: (field.relation ?? null) as FieldRelationInput | null,
 
           sortOrder: index + 1,
         });
@@ -404,6 +413,7 @@ export function TableCreatePage() {
             <div className="font-semibold">
               Создайте таблицу и сразу настройте её поля.
             </div>
+
             <p className="mt-1 text-sm text-muted-foreground">
               Таблица и поля будут созданы через стандартные CRUD операции
               Refine.
@@ -435,8 +445,55 @@ export function TableCreatePage() {
                 <FormLabel>Имя таблицы в БД *</FormLabel>
                 <Input {...register("name")} />
 
-                <FormLabel>Иконка</FormLabel>
-                <Input {...register("icon")} />
+                <FormLabel>Группировка таблицы</FormLabel>
+                <Controller
+                  name="group"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? EMPTY_GROUP_VALUE}
+                      onValueChange={(value) => {
+                        if (value === EMPTY_GROUP_VALUE) {
+                          field.onChange(null);
+
+                          setValue("groupName", null, {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                          });
+
+                          return;
+                        }
+
+                        const selectedGroup = ADMIN_TABLE_GROUP_OPTIONS.find(
+                          (group) => group.id === value,
+                        );
+
+                        field.onChange(value);
+
+                        setValue("groupName", selectedGroup?.label ?? value, {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Выберите группу" />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        <SelectItem value={EMPTY_GROUP_VALUE}>
+                          Без группы
+                        </SelectItem>
+
+                        {ADMIN_TABLE_GROUP_OPTIONS.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
 
                 <FormLabel>Описание</FormLabel>
                 <Textarea {...register("description")} />
@@ -445,7 +502,10 @@ export function TableCreatePage() {
                 <Select
                   value={watch("status")}
                   onValueChange={(value) =>
-                    setValue("status", value as AdminTableMeta["status"])
+                    setValue("status", value as AdminTableMeta["status"], {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                    })
                   }
                 >
                   <SelectTrigger className="w-full">
@@ -465,7 +525,10 @@ export function TableCreatePage() {
                 <Select
                   value={watch("source")}
                   onValueChange={(value) =>
-                    setValue("source", value as AdminTableMeta["source"])
+                    setValue("source", value as AdminTableMeta["source"], {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                    })
                   }
                 >
                   <SelectTrigger className="w-full">
@@ -504,6 +567,7 @@ export function TableCreatePage() {
                     render={({ field }) => (
                       <div className="flex items-center justify-between">
                         <span className="text-sm">{label}</span>
+
                         <Switch
                           checked={Boolean(field.value)}
                           onCheckedChange={field.onChange}
@@ -512,6 +576,30 @@ export function TableCreatePage() {
                     )}
                   />
                 ))}
+
+                <Separator />
+
+                <Controller
+                  name="showInMenu"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="text-sm">Отображать в меню</div>
+
+                        <div className="text-xs text-muted-foreground">
+                          Если выключено, таблица останется в metadata, но не
+                          попадёт в sidebar.
+                        </div>
+                      </div>
+
+                      <Switch
+                        checked={Boolean(field.value)}
+                        onCheckedChange={field.onChange}
+                      />
+                    </div>
+                  )}
+                />
               </CardContent>
             </Card>
           </div>
@@ -537,13 +625,17 @@ export function TableCreatePage() {
                     onClick={() => setActiveFieldId(field.tempId)}
                     className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
                       isActive
-                        ? "border-blue-200 bg-blue-50"
+                        ? "border-blue-200 bg-blue-50 shadow-[inset_4px_0_0_#2563eb]"
                         : "bg-background hover:bg-muted/40"
                     }`}
                   >
                     <div className="min-w-0 space-y-1">
                       <div className="flex min-w-0 items-center gap-2">
-                        <strong className="truncate">
+                        <strong
+                          className={
+                            isActive ? "truncate text-primary" : "truncate"
+                          }
+                        >
                           {field.label || field.name || `Поле ${index + 1}`}
                         </strong>
 

@@ -37,7 +37,7 @@ function getRelationTableNames(response: RelationGraphResponse | null) {
     return new Set<string>();
   }
   return new Set(
-    response.relations.flatMap((relation) => [
+    response?.data?.relations.flatMap((relation) => [
       relation.sourceTable.name,
       relation.targetTable.name,
     ]),
@@ -52,7 +52,7 @@ function getTableRelationCount(
     return 0;
   }
 
-  return response.relations.filter(
+  return response?.data?.relations.filter(
     (relation) =>
       relation.sourceTable.name === table.name ||
       relation.targetTable.name === table.name,
@@ -116,7 +116,7 @@ export function RelationsGraphPage() {
 
     const normalizedSearch = search.trim().toLowerCase();
 
-    return response.tables
+    return response?.data?.tables
       .filter((table) => relationTableNames.has(table.name))
       .filter((table) => {
         if (!normalizedSearch) {
@@ -187,7 +187,7 @@ export function RelationsGraphPage() {
     );
   }
 
-  if (!response || response.relations.length === 0) {
+  if (!response || response?.data?.relations.length === 0) {
     return (
       <Card>
         <CardContent className="flex min-h-[680px] items-center justify-center text-sm text-muted-foreground">
@@ -308,7 +308,7 @@ export function RelationsGraphPage() {
       </div>
 
       <div
-        className="h-[880px] w-full bg-muted/20"
+        className="h-220 w-full bg-muted/20"
         onContextMenu={handleGraphContextMenu}
       >
         <ReactFlow
@@ -318,7 +318,6 @@ export function RelationsGraphPage() {
           edgeTypes={edgeTypes}
           fitView
           fitViewOptions={{
-            padding: 0.22,
             includeHiddenNodes: false,
           }}
           minZoom={0.12}

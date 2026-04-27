@@ -126,7 +126,6 @@ const options = {
       await assertOk(response);
 
       const payload = await parseJson<ApiListResponse>(response);
-
       return getListData(payload);
     },
 
@@ -144,7 +143,6 @@ const options = {
 
     mapResponse: async (response) => {
       await assertOk(response);
-
       const payload = await parseJson<GetOneResponse>(response);
 
       return getOneData(payload);
