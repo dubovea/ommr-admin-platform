@@ -46,7 +46,6 @@ schemasRouter.post(
   "/parse-pydantic",
   asyncHandler(async (req, res) => {
     const method = "POST /schemas/parse-pydantic";
-
     const tables = parsePydanticJsonSchema(req.body.schema);
 
     const tableIds: string[] = [];

@@ -16,14 +16,5 @@ export default defineConfig(({ mode }) => {
         ),
       },
     },
-    server: {
-      port: Number(env.VITE_PORT) || 5174,
-      proxy: {
-        "/api": {
-          target: "http://localhost:4000",
-          changeOrigin: true,
-        },
-      },
-    },
   };
 });

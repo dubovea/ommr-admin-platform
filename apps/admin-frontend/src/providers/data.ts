@@ -1,6 +1,11 @@
 import { BACKEND_BASE_URL } from "@/assets/constants";
-import type { CreateResponse, GetOneResponse, ListResponse } from "@/types";
-import type { CrudFilter, HttpError } from "@refinedev/core";
+import type { ListResponse } from "@/types";
+import type {
+  CreateResponse,
+  CrudFilter,
+  GetOneResponse,
+  HttpError,
+} from "@refinedev/core";
 import {
   createDataProvider,
   type CreateDataProviderOptions,
@@ -13,6 +18,13 @@ if (!BACKEND_BASE_URL) {
 const FILTERS_QUERY_KEY = "filters";
 
 type QueryParams = Record<string, string | number | boolean>;
+
+type ApiListResponse = ListResponse & {
+  total?: number;
+  pagination?: {
+    total?: number;
+  };
+};
 
 type SerializedCrudFilter =
   | {
@@ -129,6 +141,24 @@ function buildFiltersParam(filters?: CrudFilter[]) {
   return JSON.stringify(serializedFilters);
 }
 
+function appendQueryValue(params: QueryParams, key: string, value: unknown) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  const normalizedValue = normalizeQueryValue(value);
+
+  if (
+    Array.isArray(normalizedValue) ||
+    (normalizedValue && typeof normalizedValue === "object")
+  ) {
+    params[key] = JSON.stringify(normalizedValue);
+    return;
+  }
+
+  params[key] = String(normalizedValue);
+}
+
 async function parseJson<T>(response: Response): Promise<T | undefined> {
   if (response.status === 204) {
     return undefined;
@@ -143,11 +173,13 @@ async function parseJson<T>(response: Response): Promise<T | undefined> {
 
 async function buildHttpError(response: Response): Promise<HttpError> {
   let message = response.statusText || "Request failed.";
+  let errors: HttpError["errors"] | undefined;
 
   try {
     const payload = (await response.clone().json()) as {
       message?: string;
       error?: string;
+      errors?: HttpError["errors"];
       data?: {
         message?: string;
       };
@@ -159,6 +191,8 @@ async function buildHttpError(response: Response): Promise<HttpError> {
       payload?.data?.message ||
       response.statusText ||
       message;
+
+    errors = payload?.errors;
   } catch {
     try {
       const text = await response.clone().text();
@@ -171,6 +205,7 @@ async function buildHttpError(response: Response): Promise<HttpError> {
   return {
     message,
     statusCode: response.status,
+    errors,
   };
 }
 
@@ -180,12 +215,14 @@ async function assertOk(response: Response) {
   }
 }
 
-function getListData(payload?: ListResponse) {
+function getListData(payload?: ApiListResponse) {
   return payload?.data ?? [];
 }
 
-function getListTotal(payload?: ListResponse) {
-  return payload?.pagination?.total ?? payload?.data?.length ?? 0;
+function getListTotal(payload?: ApiListResponse) {
+  return (
+    payload?.total ?? payload?.pagination?.total ?? payload?.data?.length ?? 0
+  );
 }
 
 function getOneData(payload?: GetOneResponse) {
@@ -196,12 +233,12 @@ function getCreateData(payload?: CreateResponse) {
   return payload?.data ?? {};
 }
 
-function getResponseData(payload: unknown) {
+function getResponseData<TData>(payload: unknown): TData {
   if (payload && typeof payload === "object" && "data" in payload) {
-    return (payload as { data: unknown }).data;
+    return (payload as { data: TData }).data;
   }
 
-  return payload;
+  return payload as TData;
 }
 
 const options = {
@@ -238,7 +275,7 @@ const options = {
     mapResponse: async (response) => {
       await assertOk(response);
 
-      const payload = await parseJson<ListResponse>(response);
+      const payload = await parseJson<ApiListResponse>(response);
 
       return getListData(payload);
     },
@@ -246,12 +283,10 @@ const options = {
     getTotalCount: async (response) => {
       await assertOk(response);
 
-      const payload = await parseJson<ListResponse>(response);
+      const payload = await parseJson<ApiListResponse>(response);
 
       return getListTotal(payload);
     },
-
-    transformError: buildHttpError,
   },
 
   getOne: {
@@ -264,8 +299,6 @@ const options = {
 
       return getOneData(payload);
     },
-
-    transformError: buildHttpError,
   },
 
   create: {
@@ -280,8 +313,6 @@ const options = {
 
       return getCreateData(payload);
     },
-
-    transformError: buildHttpError,
   },
 
   update: {
@@ -298,8 +329,6 @@ const options = {
 
       return getOneData(payload);
     },
-
-    transformError: buildHttpError,
   },
 
   deleteOne: {
@@ -312,65 +341,75 @@ const options = {
 
       return payload?.data ?? { id: params.id };
     },
-
-    transformError: buildHttpError,
   },
 
   deleteMany: {
-    getEndpoint: ({ resource }) => resource,
+    getEndpoint: ({ resource, ids }) => {
+      const searchParams = new URLSearchParams();
 
-    buildQueryParams: async ({ ids }) => {
-      return {
-        ids: JSON.stringify(ids.map(String)),
-      };
+      ids.forEach((id) => {
+        searchParams.append("ids", String(id));
+      });
+
+      const qs = searchParams.toString();
+
+      return `${resource}${qs ? `?${qs}` : ""}`;
     },
 
     mapResponse: async (response) => {
       await assertOk(response);
 
-      const payload = await parseJson<ListResponse>(response);
+      const payload = await parseJson<ApiListResponse>(response);
 
       return getListData(payload);
     },
-
-    transformError: buildHttpError,
   },
 
   custom: {
-    buildHeaders: async ({ headers }) => {
-      return headers ?? {};
+    buildHeaders: async ({ headers, payload }) => {
+      const isFormData = payload instanceof FormData;
+
+      return {
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
+        ...(headers ?? {}),
+      };
     },
 
-    buildQueryParams: async ({ query }) => {
+    buildQueryParams: async ({ query, filters, sorters }) => {
       const params: QueryParams = {};
 
-      if (!query) {
-        return params;
+      if (query && typeof query === "object") {
+        Object.entries(query as Record<string, unknown>).forEach(
+          ([key, value]) => {
+            appendQueryValue(params, key, value);
+          },
+        );
       }
 
-      Object.entries(query).forEach(([key, value]) => {
-        if (value === undefined || value === null) {
-          return;
-        }
+      const filtersParam = buildFiltersParam(filters);
 
-        const normalizedValue = normalizeQueryValue(value);
+      if (filtersParam) {
+        params[FILTERS_QUERY_KEY] = filtersParam;
+      }
 
-        if (
-          Array.isArray(normalizedValue) ||
-          (normalizedValue && typeof normalizedValue === "object")
-        ) {
-          params[key] = JSON.stringify(normalizedValue);
-          return;
-        }
-
-        params[key] = String(normalizedValue);
-      });
+      if (sorters?.length) {
+        params.sort = sorters
+          .map((sorter) => `${sorter.field}:${sorter.order}`)
+          .join(",");
+      }
 
       return params;
     },
 
-    buildBodyParams: async ({ payload }) => {
-      return payload;
+    buildBodyParams: async (params) => {
+      const body =
+        (params as { values?: unknown }).values ??
+        (params as { payload?: unknown }).payload ??
+        {};
+
+      console.log("[dataProvider.custom] body:", body);
+
+      return body;
     },
 
     mapResponse: async (response) => {
@@ -380,8 +419,6 @@ const options = {
 
       return getResponseData(payload);
     },
-
-    transformError: buildHttpError,
   },
 } satisfies CreateDataProviderOptions;
 

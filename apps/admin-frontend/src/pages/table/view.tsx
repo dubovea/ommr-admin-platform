@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDeleteMany, useNavigation } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Edit, Pencil, Search } from "lucide-react";
+import { Edit, Pencil, Search, X } from "lucide-react";
 import {
   ADMIN_TABLE_SOURCE_LABELS,
   ADMIN_TABLE_SOURCES,
@@ -40,6 +40,7 @@ import {
   DataTableFilterCombobox,
   DataTableFilterDropdownText,
 } from "@/components/refine-ui/data-table/data-table-filter";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const SOURCE_FILTER_OPTIONS = ADMIN_TABLE_SOURCES.map((source) => ({
   label: ADMIN_TABLE_SOURCE_LABELS[source],
@@ -114,12 +115,14 @@ export function TableListPage() {
   const [previewTableId, setPreviewTableId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const debounceSearchQuery = useDebounce(searchQuery);
+
   const searchFilters = searchQuery
     ? [
         {
           field: "name",
           operator: "contains" as const,
-          value: searchQuery,
+          value: debounceSearchQuery,
         },
       ]
     : [];
@@ -417,13 +420,25 @@ export function TableListPage() {
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+
             <Input
-              className="pl-9"
+              className="pr-9 pl-9"
               placeholder="Поиск по названию таблицы..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+
+            {searchQuery && (
+              <button
+                type="button"
+                aria-label="Очистить поиск"
+                className="absolute top-1/2 right-2 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="size-4" />
+              </button>
+            )}
           </div>
 
           <DeleteItemsToolbar
