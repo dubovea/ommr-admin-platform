@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type HttpError,
   useDeleteMany,
@@ -18,6 +19,7 @@ import type {
   UpdateAdminTableInput,
 } from "@ommr/shared";
 import { FIELD_INPUT_TYPE_LABELS } from "@ommr/shared";
+import { updateTableSchema } from "@ommr/shared/zod";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,6 +29,26 @@ import {
   TableSelectionCheckBox,
 } from "@/components/TableSelectionCheckBox";
 import { useTableSelection } from "@/hooks/use-table-selection";
+
+function normalizeTablePayload(
+  values: UpdateAdminTableInput,
+): UpdateAdminTableInput {
+  return {
+    label: values.label,
+    name: values.name,
+    description: values.description ?? null,
+
+    group: values.group ?? null,
+    groupName: values.groupName ?? null,
+    showInMenu: values.showInMenu ?? true,
+
+    canList: values.canList ?? true,
+    canCreate: values.canCreate ?? true,
+    canEdit: values.canEdit ?? true,
+    canDelete: values.canDelete ?? false,
+    status: values.status,
+  };
+}
 
 export function useTableEditPage(tableId?: string) {
   const invalidate = useInvalidate();
@@ -51,6 +73,27 @@ export function useTableEditPage(tableId?: string) {
     },
   });
 
+  const tableForm = useForm<AdminTableMeta, HttpError, UpdateAdminTableInput>({
+    resolver: zodResolver(updateTableSchema),
+    mode: "onChange",
+    refineCoreProps: {
+      resource: "tables",
+      id: tableId,
+      action: "edit",
+      redirect: false,
+      mutationMode: "optimistic",
+      queryOptions: {
+        enabled: Boolean(tableId),
+      },
+      autoSave: {
+        enabled: true,
+        debounce: 800,
+        invalidateOnUnmount: true,
+        onFinish: normalizeTablePayload,
+      },
+    },
+  });
+
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [fieldIdsToDelete, setFieldIdsToDelete] = useState<string[]>([]);
@@ -64,37 +107,17 @@ export function useTableEditPage(tableId?: string) {
     removeSelectedIds: removeSelectedFieldIds,
   } = useTableSelection();
 
-  const tableForm = useForm<AdminTableMeta, HttpError, UpdateAdminTableInput>({
-    refineCoreProps: {
-      resource: "tables",
-      id: tableId,
-      action: "edit",
-      redirect: false,
-      queryOptions: {
-        enabled: Boolean(tableId),
-      },
-    },
-  });
-
-  const { mutate: updateTable, mutation: updateTableMutation } =
-    useUpdate<AdminTableMeta>();
-
   const { mutate: updateField, mutation: updateFieldMutation } =
     useUpdate<AdminFieldMeta>();
 
   const { mutate: deleteFields, mutation: deleteFieldsMutation } =
     useDeleteMany<AdminFieldMeta>();
 
-  const isTableUpdating = updateTableMutation.isPending;
   const isFieldUpdating = updateFieldMutation.isPending;
   const isDeletePending = deleteFieldsMutation?.isPending;
 
-  const invalidateTables = useCallback(() => {
-    void invalidate({
-      resource: "tables",
-      invalidates: ["list", "detail"],
-    });
-  }, [invalidate]);
+  const isTableAutoSaving =
+    tableForm.refineCore.autoSaveProps?.status === "pending";
 
   const invalidateFieldsAndTables = useCallback(() => {
     void invalidate({
@@ -107,33 +130,6 @@ export function useTableEditPage(tableId?: string) {
       invalidates: ["list", "detail"],
     });
   }, [invalidate]);
-
-  const patchTable = useCallback(
-    (payload: UpdateAdminTableInput) => {
-      if (!tableId) {
-        return Promise.resolve();
-      }
-
-      return new Promise<void>((resolve, reject) => {
-        updateTable(
-          {
-            resource: "tables",
-            id: tableId,
-            values: payload,
-            mutationMode: "optimistic",
-          },
-          {
-            onSuccess: () => {
-              invalidateTables();
-              resolve();
-            },
-            onError: reject,
-          },
-        );
-      });
-    },
-    [invalidateTables, tableId, updateTable],
-  );
 
   const patchField = useCallback(
     (fieldId: string, payload: UpdateAdminFieldInput) => {
@@ -164,6 +160,7 @@ export function useTableEditPage(tableId?: string) {
     if (uniqueIds.length === 0) {
       return;
     }
+
     setFieldIdsToDelete(uniqueIds);
     setIsDeleteDialogOpen(true);
   }, []);
@@ -373,6 +370,7 @@ export function useTableEditPage(tableId?: string) {
     () => fieldRows.filter((row) => fieldIdsToDelete.includes(row.id)),
     [fieldRows, fieldIdsToDelete],
   );
+
   useEffect(() => {
     if (fieldRows.length === 0) {
       setActiveFieldId(null);
@@ -386,26 +384,6 @@ export function useTableEditPage(tableId?: string) {
     const userIdRow = fieldRows.find((row) => row.original.name === "user_id");
     setActiveFieldId((userIdRow ?? fieldRows[0]).id);
   }, [fieldRows, activeFieldId]);
-
-  function saveTable(values: UpdateAdminTableInput) {
-    const payload: UpdateAdminTableInput = {
-      label: values.label,
-      name: values.name,
-      description: values.description,
-
-      group: values.group ?? null,
-      groupName: values.groupName ?? null,
-      showInMenu: values.showInMenu ?? true,
-
-      canList: values.canList,
-      canCreate: values.canCreate,
-      canEdit: values.canEdit,
-      canDelete: values.canDelete,
-      status: values.status,
-    };
-
-    void tableForm.refineCore.onFinish(payload);
-  }
 
   function patchSelectedField(payload: UpdateAdminFieldInput) {
     if (!selectedField) {
@@ -461,10 +439,7 @@ export function useTableEditPage(tableId?: string) {
     tablesData: tablesListData?.data?.data ?? [],
 
     tableForm,
-    saveTable,
-
-    patchTable,
-    isTableUpdating,
+    isTableAutoSaving,
 
     fieldsTable,
     fieldRows,

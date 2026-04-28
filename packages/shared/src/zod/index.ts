@@ -8,7 +8,7 @@ import {
   type CreateAdminTableInput,
   type UpdateAdminFieldInput,
   type UpdateAdminTableInput,
-} from "@ommr/shared";
+} from "../index.js";
 
 export const fieldInputTypeSchema = z.enum(FIELD_INPUT_TYPES);
 export const tableStatusSchema = z.enum(ADMIN_TABLE_STATUSES);
@@ -27,19 +27,6 @@ export const fieldValidationSchema = z.object({
   pattern: z.string().nullable(),
 });
 
-/**
- * Входная relation-схема для API.
- *
- * Frontend может отправить только:
- * {
- *   relation: {
- *     targetTableId: "..."
- *   }
- * }
- *
- * Backend потом сам достроит:
- * targetTable, targetKey, displayField, relationTargetTableId.
- */
 export const fieldRelationInputSchema = z.object({
   targetTableId: z.uuid().nullable().optional(),
   targetTable: z.string().nullable().optional(),
@@ -48,12 +35,6 @@ export const fieldRelationInputSchema = z.object({
   additionalText: z.string().nullable().optional(),
 });
 
-/**
- * Полная relation-схема.
- *
- * Нужна не для входящего API, а для уже нормализованной модели,
- * если где-то захочешь отдельно валидировать результат перед сохранением.
- */
 export const fieldRelationMetaSchema = z.object({
   targetTableId: z.uuid(),
   targetTable: z.string().min(1),

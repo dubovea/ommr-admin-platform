@@ -386,9 +386,7 @@ export function TableCreatePage() {
       });
 
       edit("tables", createdTable.id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Ошибка создания");
-    }
+    } catch (error) {}
   }
 
   return (

@@ -4,7 +4,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
-import { createFieldSchema, updateFieldSchema } from "../../validation.js";
+import { createFieldSchema, updateFieldSchema } from "@ommr/shared/zod";
 import { getRequiredStringForEq, parseIdsQuery } from "../../lib/utils.js";
 import {
   buildEqFilter,

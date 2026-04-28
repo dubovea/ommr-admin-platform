@@ -4,7 +4,7 @@ import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
-import { createTableSchema, updateTableSchema } from "../../validation.js";
+import { createTableSchema, updateTableSchema } from "@ommr/shared/zod";
 import { getRequiredStringForEq, parseIdsQuery } from "../../lib/utils.js";
 import {
   buildMultiColumnFilterCondition,

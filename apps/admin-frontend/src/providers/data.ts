@@ -1,6 +1,10 @@
 import { BACKEND_BASE_URL } from "@/assets/constants";
 import type { AdminApiListResponse } from "@ommr/shared";
-import type { CreateResponse, GetOneResponse, HttpError } from "@refinedev/core";
+import type {
+  CreateResponse,
+  GetOneResponse,
+  HttpError,
+} from "@refinedev/core";
 import {
   createDataProvider,
   type CreateDataProviderOptions,
@@ -17,6 +21,27 @@ if (!BACKEND_BASE_URL) {
 
 type ApiListResponse = AdminApiListResponse;
 
+type ApiErrorIssue = {
+  path?: Array<string | number>;
+  message?: string;
+  code?: string;
+};
+
+type ApiErrorPayload = {
+  message?: string;
+  error?: string;
+
+  errors?: HttpError["errors"];
+  issues?: ApiErrorIssue[];
+
+  data?: {
+    message?: string;
+    error?: string;
+    errors?: HttpError["errors"];
+    issues?: ApiErrorIssue[];
+  };
+};
+
 async function parseJson<T>(response: Response): Promise<T | undefined> {
   if (response.status === 204) {
     return undefined;
@@ -29,36 +54,55 @@ async function parseJson<T>(response: Response): Promise<T | undefined> {
   }
 }
 
-async function buildHttpError(response: Response): Promise<HttpError> {
-  let message = response.statusText || "Request failed.";
-  let errors: HttpError["errors"] | undefined;
-
+async function parseText(response: Response): Promise<string | undefined> {
   try {
-    const payload = (await response.clone().json()) as {
-      message?: string;
-      error?: string;
-      errors?: HttpError["errors"];
-      data?: {
-        message?: string;
-      };
-    };
-
-    message =
-      payload?.message ||
-      payload?.error ||
-      payload?.data?.message ||
-      response.statusText ||
-      message;
-
-    errors = payload?.errors;
+    const text = await response.clone().text();
+    return text || undefined;
   } catch {
-    try {
-      const text = await response.clone().text();
-      message = text || message;
-    } catch {
-      // ignore
-    }
+    return undefined;
   }
+}
+
+function getErrorIssues(payload?: ApiErrorPayload): ApiErrorIssue[] {
+  return payload?.issues ?? payload?.data?.issues ?? [];
+}
+
+function normalizeIssueErrors(
+  issues: ApiErrorIssue[],
+): Record<string, string> | undefined {
+  if (!issues.length) {
+    return undefined;
+  }
+
+  return issues.reduce<Record<string, string>>((acc, issue) => {
+    const key = issue.path?.length ? issue.path.join(".") : "root";
+    acc[key] = issue.message || "Invalid value";
+    return acc;
+  }, {});
+}
+
+function getFirstIssueMessage(issues: ApiErrorIssue[]) {
+  return issues.find((issue) => issue.message)?.message;
+}
+
+async function buildHttpError(response: Response): Promise<HttpError> {
+  const payload = await parseJson<ApiErrorPayload>(response);
+  const text = payload ? undefined : await parseText(response);
+
+  const issues = getErrorIssues(payload);
+
+  const errors =
+    payload?.errors ?? payload?.data?.errors ?? normalizeIssueErrors(issues);
+
+  const message =
+    payload?.message ||
+    payload?.error ||
+    payload?.data?.message ||
+    payload?.data?.error ||
+    getFirstIssueMessage(issues) ||
+    text ||
+    response.statusText ||
+    "Request failed.";
 
   return {
     message,
@@ -90,6 +134,10 @@ function getOneData(payload?: GetOneResponse) {
 function getCreateData(payload?: CreateResponse) {
   return payload?.data ?? {};
 }
+
+const transformError = async (response: Response): Promise<HttpError> => {
+  return buildHttpError(response);
+};
 
 const options = {
   getList: {
@@ -126,6 +174,7 @@ const options = {
       await assertOk(response);
 
       const payload = await parseJson<ApiListResponse>(response);
+
       return getListData(payload);
     },
 
@@ -143,6 +192,7 @@ const options = {
 
     mapResponse: async (response) => {
       await assertOk(response);
+
       const payload = await parseJson<GetOneResponse>(response);
 
       return getOneData(payload);
@@ -161,6 +211,8 @@ const options = {
 
       return getCreateData(payload);
     },
+
+    transformError,
   },
 
   update: {
@@ -177,6 +229,8 @@ const options = {
 
       return getOneData(payload);
     },
+
+    transformError,
   },
 
   deleteOne: {
@@ -189,6 +243,8 @@ const options = {
 
       return payload?.data ?? { id: params.id };
     },
+
+    transformError,
   },
 
   deleteMany: {
