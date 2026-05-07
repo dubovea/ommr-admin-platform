@@ -11,7 +11,7 @@ import {
   useUserFriendlyName,
 } from "@refinedev/core";
 import { ArrowLeftIcon } from "lucide-react";
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 
 type EditViewProps = PropsWithChildren<{
   className?: string;
@@ -28,7 +28,7 @@ type EditViewHeaderProps = PropsWithChildren<{
   title?: string;
   wrapperClassName?: string;
   headerClassName?: string;
-  actionsSlot?: React.ReactNode;
+  actionsSlot?: ReactNode;
   onSave?: () => void | Promise<void>;
   saving?: boolean;
 }>;

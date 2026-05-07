@@ -5,6 +5,7 @@ import {
   useDeleteMany,
   useInvalidate,
   useList,
+  useNotification,
   useShow,
   useUpdate,
 } from "@refinedev/core";
@@ -16,10 +17,9 @@ import type {
   AdminFieldMeta,
   AdminTableMeta,
   UpdateAdminFieldInput,
-  UpdateAdminTableInput,
 } from "@ommr/shared";
 import { FIELD_INPUT_TYPE_LABELS } from "@ommr/shared";
-import { updateTableSchema } from "@ommr/shared/zod";
+import { tableFormSchema, type AdminTableFormValues } from "@ommr/shared/zod";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,29 +29,12 @@ import {
   TableSelectionCheckBox,
 } from "@/components/TableSelectionCheckBox";
 import { useTableSelection } from "@/hooks/use-table-selection";
-
-function normalizeTablePayload(
-  values: UpdateAdminTableInput,
-): UpdateAdminTableInput {
-  return {
-    label: values.label,
-    name: values.name,
-    description: values.description ?? null,
-
-    group: values.group ?? null,
-    groupName: values.groupName ?? null,
-    showInMenu: values.showInMenu ?? true,
-
-    canList: values.canList ?? true,
-    canCreate: values.canCreate ?? true,
-    canEdit: values.canEdit ?? true,
-    canDelete: values.canDelete ?? false,
-    status: values.status,
-  };
-}
+import { getErrorMessage } from "@/lib/errors";
+import { toUpdateTablePayload } from "@/lib/table-form-mappers";
 
 export function useTableEditPage(tableId?: string) {
   const invalidate = useInvalidate();
+  const { open } = useNotification();
 
   const {
     query: { data: editTableData, isLoading, isError },
@@ -73,8 +56,8 @@ export function useTableEditPage(tableId?: string) {
     },
   });
 
-  const tableForm = useForm<AdminTableMeta, HttpError, UpdateAdminTableInput>({
-    resolver: zodResolver(updateTableSchema),
+  const tableForm = useForm<AdminTableMeta, HttpError, AdminTableFormValues>({
+    resolver: zodResolver(tableFormSchema),
     mode: "onChange",
     refineCoreProps: {
       resource: "tables",
@@ -89,7 +72,17 @@ export function useTableEditPage(tableId?: string) {
         enabled: true,
         debounce: 800,
         invalidateOnUnmount: true,
-        onFinish: normalizeTablePayload,
+        onFinish: toUpdateTablePayload,
+      },
+      onMutationError: (error, _variables, _context, isAutoSave) => {
+        open?.({
+          type: "error",
+          message: "Не удалось сохранить таблицу",
+          description: getErrorMessage(
+            error,
+            "Проверьте данные таблицы и попробуйте ещё раз",
+          ),
+        });
       },
     },
   });
@@ -116,9 +109,6 @@ export function useTableEditPage(tableId?: string) {
   const isFieldUpdating = updateFieldMutation.isPending;
   const isDeletePending = deleteFieldsMutation?.isPending;
 
-  const isTableAutoSaving =
-    tableForm.refineCore.autoSaveProps?.status === "pending";
-
   const invalidateFieldsAndTables = useCallback(() => {
     void invalidate({
       resource: "fields",
@@ -130,6 +120,11 @@ export function useTableEditPage(tableId?: string) {
       invalidates: ["list", "detail"],
     });
   }, [invalidate]);
+
+  const tableAutoSave = tableForm.refineCore.autoSaveProps;
+  const tableAutoSaveStatus = String(tableAutoSave.status);
+  const isTableAutoSaving =
+    tableAutoSaveStatus === "pending" || tableAutoSaveStatus === "loading";
 
   const patchField = useCallback(
     (fieldId: string, payload: UpdateAdminFieldInput) => {
@@ -146,12 +141,22 @@ export function useTableEditPage(tableId?: string) {
               invalidateFieldsAndTables();
               resolve();
             },
-            onError: reject,
+            onError: (error) => {
+              open?.({
+                type: "error",
+                message: "Не удалось сохранить поле",
+                description: getErrorMessage(
+                  error,
+                  "Проверьте настройки поля и попробуйте ещё раз",
+                ),
+              });
+              reject(error);
+            },
           },
         );
       });
     },
-    [invalidateFieldsAndTables, updateField],
+    [invalidateFieldsAndTables, open, updateField],
   );
 
   const openDeleteFieldsDialog = useCallback((ids: string[]) => {
@@ -439,6 +444,7 @@ export function useTableEditPage(tableId?: string) {
     tablesData: tablesListData?.data?.data ?? [],
 
     tableForm,
+    tableAutoSave,
     isTableAutoSaving,
 
     fieldsTable,

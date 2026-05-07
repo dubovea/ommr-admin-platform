@@ -4,20 +4,26 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
-
+    "lib": [
+      "ES2022"
+    ],
     "rootDir": "src",
     "outDir": "dist",
-
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "sourceMap": true,
     "noEmit": false
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts"
+  ],
   "exclude": [
     "dist",
     "node_modules",
     "drizzle",
-    "drizzle.config.ts"
+    "drizzle.config.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

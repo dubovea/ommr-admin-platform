@@ -13,7 +13,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test ../../packages/shared/src/zod/index.test.ts src/services/pydantic-schema-parser.service.test.ts ../../apps/admin-frontend/src/lib/table-form-mappers.test.ts"
   },
   "dependencies": {
     "@ommr/shared": "workspace:*",

@@ -7,6 +7,7 @@ import { adminFields, adminTables } from "../../db/schema.js";
 import { asyncHandler } from "../../lib/async-handler.js";
 import { getRequiredStringForEq } from "../../lib/utils.js";
 import { parsePydanticJsonSchema } from "../../services/pydantic-schema-parser.service.js";
+import { importPydanticSchemaRequestSchema } from "@ommr/shared/zod";
 
 export const schemasRouter = Router();
 
@@ -49,7 +50,8 @@ schemasRouter.post(
   "/parse-pydantic",
   asyncHandler(async (req, res) => {
     const method = "POST /schemas/parse-pydantic";
-    const tables = parsePydanticJsonSchema(req.body.schema);
+    const { schema } = importPydanticSchemaRequestSchema.parse(req.body);
+    const tables = parsePydanticJsonSchema(schema);
 
     const tableIds: string[] = [];
     const importedTableIdsByName = new Map<string, string>();

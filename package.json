@@ -21,7 +21,9 @@
     "docker:build": "docker compose build",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "test": "yarn build:shared && yarn workspace @ommr/admin-backend test",
+    "typecheck": "yarn typecheck:shared && yarn workspace @ommr/admin-backend typecheck && yarn workspace @ommr/admin-frontend typecheck"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

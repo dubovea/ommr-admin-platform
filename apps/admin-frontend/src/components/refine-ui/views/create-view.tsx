@@ -10,7 +10,7 @@ import {
   useUserFriendlyName,
 } from "@refinedev/core";
 import { ArrowLeftIcon } from "lucide-react";
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 
 type CreateViewProps = PropsWithChildren<{
   className?: string;
@@ -27,6 +27,7 @@ type CreateHeaderProps = PropsWithChildren<{
   title?: string;
   wrapperClassName?: string;
   headerClassName?: string;
+  actionsSlot?: ReactNode;
 }>;
 
 export const CreateViewHeader = ({
@@ -34,6 +35,7 @@ export const CreateViewHeader = ({
   title: titleFromProps,
   wrapperClassName,
   headerClassName,
+  actionsSlot,
 }: CreateHeaderProps) => {
   const back = useBack();
 
@@ -63,14 +65,21 @@ export const CreateViewHeader = ({
           "flex",
           "gap-1",
           "items-center",
+          "justify-between",
           "-ml-2.5",
           headerClassName
         )}
       >
-        <Button variant="ghost" size="icon" onClick={back}>
-          <ArrowLeftIcon className="h-4 w-4" />
-        </Button>
-        <h2 className="text-2xl font-bold">{title}</h2>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={back}>
+            <ArrowLeftIcon className="h-4 w-4" />
+          </Button>
+          <h2 className="text-2xl font-bold">{title}</h2>
+        </div>
+
+        {actionsSlot ? (
+          <div className="flex items-center gap-2">{actionsSlot}</div>
+        ) : null}
       </div>
     </div>
   );

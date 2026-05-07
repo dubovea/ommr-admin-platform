@@ -1,9 +1,18 @@
-import { Control, Controller, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import type {
+  Control,
+  UseFormRegister,
+  UseFormSetValue,
+} from "react-hook-form";
+import { Controller } from "react-hook-form";
 import {
   ADMIN_TABLE_GROUP_OPTIONS,
+  ADMIN_TABLE_SOURCE_LABELS,
+  ADMIN_TABLE_SOURCES,
+  ADMIN_TABLE_STATUS_LABELS,
+  ADMIN_TABLE_STATUSES,
   type AdminTableMeta,
-  type UpdateAdminTableInput,
 } from "@ommr/shared";
+import type { AdminTableFormValues } from "@ommr/shared/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,9 +30,9 @@ type Mode = "create" | "edit" | "view";
 
 type MainInfoFormProps = {
   mode: Mode;
-  control: Control<UpdateAdminTableInput>;
-  register: UseFormRegister<UpdateAdminTableInput>;
-  setValue: UseFormSetValue<UpdateAdminTableInput>;
+  control: Control<AdminTableFormValues>;
+  register: UseFormRegister<AdminTableFormValues>;
+  setValue: UseFormSetValue<AdminTableFormValues>;
   editTableData?: { data: AdminTableMeta };
 };
 
@@ -38,12 +47,6 @@ export function MainInfoForm({
 
   const updateGroupFields = (value: string) => {
     if (value === EMPTY_GROUP_VALUE) {
-      setValue("group", null, {
-        shouldDirty: true,
-        shouldTouch: true,
-        shouldValidate: true,
-      });
-
       setValue("groupName", null, {
         shouldDirty: true,
         shouldTouch: true,
@@ -57,15 +60,7 @@ export function MainInfoForm({
       (group) => group.id === value,
     );
 
-    const groupName = selectedGroup?.label ?? value;
-
-    setValue("group", value, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
-
-    setValue("groupName", groupName, {
+    setValue("groupName", selectedGroup?.label ?? value, {
       shouldDirty: true,
       shouldTouch: true,
       shouldValidate: true,
@@ -105,7 +100,10 @@ export function MainInfoForm({
               <Select
                 value={field.value ?? EMPTY_GROUP_VALUE}
                 disabled={isDisabled}
-                onValueChange={updateGroupFields}
+                onValueChange={(value) => {
+                  updateGroupFields(value);
+                  field.onChange(value === EMPTY_GROUP_VALUE ? null : value);
+                }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Выберите группу" />
@@ -125,6 +123,54 @@ export function MainInfoForm({
           />
         </LabelWithField>
 
+        {mode === "create" && (
+          <>
+            <LabelWithField label="Статус">
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {ADMIN_TABLE_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {ADMIN_TABLE_STATUS_LABELS[status]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </LabelWithField>
+
+            <LabelWithField label="Источник">
+              <Controller
+                name="source"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {ADMIN_TABLE_SOURCES.map((source) => (
+                        <SelectItem key={source} value={source}>
+                          {ADMIN_TABLE_SOURCE_LABELS[source]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </LabelWithField>
+          </>
+        )}
+
         {mode === "edit" && (
           <LabelWithField label="ID таблицы в БД">
             <Input value={editTableData?.data.id ?? ""} readOnly disabled />
@@ -132,10 +178,18 @@ export function MainInfoForm({
         )}
 
         <LabelWithField label="Описание">
-          <Textarea
-            {...register("description")}
-            disabled={isDisabled}
-            readOnly={mode === "view"}
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <Textarea
+                value={field.value ?? ""}
+                disabled={isDisabled}
+                readOnly={mode === "view"}
+                onBlur={field.onBlur}
+                onChange={(event) => field.onChange(event.target.value)}
+              />
+            )}
           />
         </LabelWithField>
       </CardContent>

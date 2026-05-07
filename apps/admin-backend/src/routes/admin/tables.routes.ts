@@ -254,12 +254,18 @@ tablesRouter.post(
       .where(eq(adminTables.name, name));
 
     if (table) {
+      const message = `Таблица с именем ${table.name} уже существует.`;
+
       res.status(409).json({
+        message,
         error: "Table already exists",
         method,
         field: "name",
         value: name,
-        reason: `Таблица с именем ${table.name} уже существует.`,
+        reason: message,
+        errors: {
+          name: message,
+        },
       });
       return;
     }
@@ -287,6 +293,30 @@ tablesRouter.patch(
     }
 
     const payload = updateTableSchema.parse(req.body);
+
+    if (payload.name) {
+      const [existingWithSameName] = await db
+        .select()
+        .from(adminTables)
+        .where(eq(adminTables.name, payload.name));
+
+      if (existingWithSameName && existingWithSameName.id !== id) {
+        const message = `Таблица с именем ${existingWithSameName.name} уже существует.`;
+
+        res.status(409).json({
+          message,
+          error: "Table already exists",
+          method,
+          field: "name",
+          value: payload.name,
+          reason: message,
+          errors: {
+            name: message,
+          },
+        });
+        return;
+      }
+    }
 
     const [updated] = await db
       .update(adminTables)

@@ -112,17 +112,7 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
       return {
         name: tableName,
         dbName: tableName,
-
-        /**
-         * Приоритет label:
-         * 1. root properties[tableName].title — например "ЭстакадыВарианты"
-         * 2. $defs[Model].title — например "LoadRackVariantsData"
-         * 3. fallback из имени root-свойства — например "Load Rack Variants"
-         */
-        label:
-          tableRootProperties.label ??
-          getSchemaTitle(modelSchema) ??
-          toTitle(rawTableName),
+        label: modelSchema?.title ?? "",
 
         description: modelSchema.description ?? null,
 

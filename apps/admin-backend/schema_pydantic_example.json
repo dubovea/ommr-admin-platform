@@ -1,26 +1,29 @@
 {
   "$defs": {
     "Cargoes": {
-      "description": "Модель данных о грузах.\n\nAttributes:\n    code (str): Код груза\n    ETSNG (str): Код ЕТСНГ (Единая тарифно-статистическая номенклатура грузов)\n    name (str): Наименование груза\n    statweight (str): Статнагрузка",
+      "description": "Модель данных о грузах.\n\nAttributes:\n    code (str): Код груза\n    code_KSM (str): Код КСМ\n    name (str): Наименование груза\n    statweight (str): Статнагрузка",
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Код",
           "type": "string"
         },
         "code_KSM": {
           "default": "",
-          "title": "Код",
+          "required": false,
+          "title": "Код КСМ",
           "type": "string"
         },
         "name": {
           "default": "",
-          "title": "Название",
+          "required": true,
+          "title": "Наименование",
           "type": "string"
         },
         "statweight": {
           "default": 0,
-          "title": "Statweight",
+          "title": "Статнагрузка",
           "type": "number"
         }
       },
@@ -32,46 +35,53 @@
       "properties": {
         "load_rack_code": {
           "default": "",
+          "required": true,
           "title": "Эстакада",
           "type": "string",
           "x-relation": {
-            "to_table": "load_racks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "load_racks"
           }
         },
         "variant_code": {
           "default": "",
+          "required": true,
           "title": "Код варианта",
           "type": "string"
         },
         "variant_name": {
           "default": "",
+          "required": true,
           "title": "Название варианта",
           "type": "string"
         },
         "track": {
           "default": "",
+          "required": true,
           "title": "Путь",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         },
         "riser_count": {
           "default": 0,
+          "required": true,
           "title": "Стояков",
           "type": "integer"
         },
         "is_loading": {
           "default": 0,
+          "required": false,
           "title": "Тип операции",
           "type": "integer"
         },
         "load_time": {
           "default": 0,
+          "required": true,
           "title": "Время операции (мин)",
           "type": "integer"
         },
@@ -79,12 +89,14 @@
           "items": {
             "type": "string"
           },
+          "multiple": true,
+          "required": true,
           "title": "Продукты",
           "type": "array",
           "x-relation": {
-            "to_table": "cargoes",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "cargoes"
           }
         }
       },
@@ -96,11 +108,13 @@
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Код",
           "type": "string"
         },
         "name": {
           "default": "",
+          "required": true,
           "title": "Название эстакады",
           "type": "string"
         }
@@ -113,26 +127,29 @@
       "properties": {
         "load_rack_code": {
           "default": "",
+          "required": true,
           "title": "Название эстакады",
           "type": "string",
           "x-relation": {
-            "to_table": "load_racks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "load_racks"
           }
         },
         "variant_code": {
           "default": "",
+          "required": true,
           "title": "Название варианта",
           "type": "string",
           "x-relation": {
-            "to_table": "load_rack_variants",
+            "display_field": "variant_name",
             "link_key": "variant_code",
-            "display_field": "variant_name"
+            "to_table": "load_rack_variants"
           }
         },
         "time": {
           "default": 0,
+          "required": true,
           "title": "Время операции, мин",
           "type": "integer"
         }
@@ -145,11 +162,13 @@
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Код",
           "type": "string"
         },
         "name": {
           "default": "",
+          "required": true,
           "title": "Название локомотива",
           "type": "string"
         }
@@ -162,22 +181,24 @@
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Локомотив",
           "type": "string",
           "x-relation": {
-            "to_table": "locos",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "locos"
           }
         },
         "track": {
           "default": "",
+          "required": true,
           "title": "Путь",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         }
       },
@@ -189,51 +210,57 @@
       "properties": {
         "date": {
           "default": "",
+          "required": true,
           "title": "Дата поступления",
           "type": "string"
         },
         "code": {
           "default": "",
+          "required": true,
           "title": "Код локомотива",
           "type": "string",
           "x-relation": {
-            "to_table": "locos",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "locos"
           }
         },
         "track": {
           "default": "",
+          "required": true,
           "title": "Путь",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         },
         "type_code": {
           "default": "",
+          "required": true,
           "title": "Код типа",
           "type": "string",
           "x-relation": {
-            "to_table": "wagon_types",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "wagon_types"
           }
         },
         "cargo": {
           "default": "",
+          "required": true,
           "title": "Продукт",
           "type": "string",
           "x-relation": {
-            "to_table": "cargoes",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "cargoes"
           }
         },
         "quantity": {
           "default": 0,
+          "required": true,
           "title": "Количество",
           "type": "integer"
         }
@@ -242,28 +269,31 @@
       "type": "object"
     },
     "LocosManevours": {
-      "description": "Модель данных о управлении  локомотивов.\n\nAttributes:\n    code (str): Код управления ломотивов\n    manevours (list[str]): Список кодов путей, на которых может работать локомотив",
+      "description": "Модель данных об управлении локомотивов.\n\nAttributes:\n    code (str): Код управления локомотива\n    manevours (list[str]): Список кодов путей, на которых может работать локомотив",
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Локомотив",
           "type": "string",
           "x-relation": {
-            "to_table": "locos",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "locos"
           }
         },
         "maneuvours": {
           "items": {
             "type": "string"
           },
+          "multiple": true,
+          "required": true,
           "title": "Маневровый район",
           "type": "array",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         }
       },
@@ -271,35 +301,39 @@
       "type": "object"
     },
     "LocosShiftChange": {
-      "description": "Модель данных смены локомотивов.\n\nAttributes:\n    code (str): Код смены локомотивов\n    track (str): Трек\n    from_time (str): Время начала смены\n    to_time (str): Время завершения смены",
+      "description": "Модель данных смены локомотивов.\n\nAttributes:\n    code (str): Код  локомотивов\n    track (str): Код пути\n    from_time (str): Время начала\n    to_time (str): Время завершения",
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Локомотив",
           "type": "string",
           "x-relation": {
-            "to_table": "locos",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "locos"
           }
         },
         "track": {
           "default": "",
+          "required": true,
           "title": "Путь",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         },
         "from_time": {
           "default": "",
+          "required": true,
           "title": "Время начала",
           "type": "string"
         },
         "to_time": {
           "default": "",
+          "required": true,
           "title": "Время окончания",
           "type": "string"
         }
@@ -312,16 +346,19 @@
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Код",
           "type": "string"
         },
         "name": {
           "default": "",
+          "required": true,
           "title": "Название",
           "type": "string"
         },
         "time": {
           "default": 0,
+          "required": true,
           "title": "Время (мин)",
           "type": "integer"
         }
@@ -330,36 +367,41 @@
       "type": "object"
     },
     "ResourceUnavailable": {
-      "description": "Модель данных недоступных ресурсов.\n\nAttributes:\n    code (str): Код обслуживания\n    from_date (str): Дата начала обслуживания\n    to_date (str): Дата завершения обслуживания",
+      "description": "Модель данных недоступных ресурсов.\n\nAttributes:\n    type_code (str): Тип ресурса\n    code (str): Код ресурса\n    from_date (str): Дата начала обслуживания\n    to_date (str): Дата завершения обслуживания\n    track (str): Код пути",
       "properties": {
         "type_code": {
           "default": "",
+          "required": true,
           "title": "Код типа",
           "type": "string"
         },
         "code": {
           "default": "",
+          "required": true,
           "title": "Код ресурса",
           "type": "string"
         },
         "from_date": {
           "default": "",
+          "required": true,
           "title": "Дата начала",
           "type": "string"
         },
         "to_date": {
           "default": "",
-          "title": "Длина окончания",
+          "required": true,
+          "title": "Дата окончания",
           "type": "string"
         },
         "track": {
           "default": "",
-          "title": "Путь",
+          "required": true,
+          "title": "Код пути",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         }
       },
@@ -367,46 +409,50 @@
       "type": "object"
     },
     "Shipment": {
-      "description": "Модель данных об отгрузках.\n\nAttributes:\n    code (str): Код отгрузки\n    cargo_code (str): Код груза\n    type_code (str): Код типа вагона\n    track (str): Код пути\n    volume (int): Объем отгрузки\n    priority (int): Приоритет отгрузки",
+      "description": "Модель данных об отгрузках.\n\nAttributes:\n    code (str): Код отгрузки\n    cargo_code (str): Код груза\n    type_code (str): Код типа вагона\n    track (str): Код пути\n    volume (int): Объем отгрузки\n    priority (int): Приоритет отгрузки\n    deactivated (bool): Деактивировано",
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Код",
           "type": "string"
         },
         "cargo_code": {
           "default": "",
+          "required": true,
           "title": "Продукт",
           "type": "string",
           "x-relation": {
-            "to_table": "cargoes",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "cargoes"
           }
         },
         "type_code": {
           "default": "",
-          "title": "Type Code",
+          "title": "Код типа вагона",
           "type": "string"
         },
         "track": {
           "default": "",
-          "title": "Track",
+          "title": "Код пути",
           "type": "string"
         },
         "volume": {
           "default": 0,
+          "required": true,
           "title": "Объем (ваг)",
           "type": "integer"
         },
         "priority": {
           "default": 0,
+          "required": false,
           "title": "Приоритет",
           "type": "integer"
         },
         "deactivated": {
           "default": false,
-          "title": "Деактивирован",
+          "title": "Деактивировано",
           "type": "boolean"
         }
       },
@@ -418,32 +464,36 @@
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Код",
           "type": "string"
         },
         "name": {
           "default": "",
+          "required": true,
           "title": "Название",
           "type": "string"
         },
         "length": {
           "default": 0,
+          "required": true,
           "title": "Длина (м)",
-          "type": "integer"
+          "type": "string"
         },
         "capacity": {
           "default": 0,
+          "required": true,
           "title": "Вместимость (ваг)",
-          "type": "integer"
+          "type": "string"
         },
         "weigh_code": {
           "default": "",
-          "title": "Weigh Code",
+          "title": "Код весов",
           "type": "string"
         },
         "weigh_name": {
           "default": "",
-          "title": "Weigh Name",
+          "title": "Название весов",
           "type": "string"
         }
       },
@@ -451,44 +501,50 @@
       "type": "object"
     },
     "TracksLinks": {
-      "description": "Модель данных о связях между путями.\n\nAttributes:\n    from_ (str): Код пути отправления (алиас 'from')\n    to (str): Код пути назначения\n    switch (str): Код стрелочного перевода\n    move_speed (int): Скорость движения\n    move_time (int): Время движения",
+      "description": "Модель данных о связях между путями.\n\nAttributes:\n    from_ (str): Код пути отправления (алиас 'from')\n    to (str): Код пути назначения\n    switch (str): Код стрелочного перевода\n    operation (str): Код операции\n    move_speed (int): Скорость движения\n    move_time (int): Время движения",
       "properties": {
         "from": {
+          "required": true,
           "title": "Путь1",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         },
         "to": {
           "default": "",
+          "required": true,
           "title": "Путь2",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         },
         "switch": {
           "default": "",
+          "required": false,
           "title": "Стрелка",
           "type": "string"
         },
         "operation": {
           "default": "",
+          "required": true,
           "title": "Операция",
           "type": "string"
         },
         "move_speed": {
           "default": 0,
+          "required": false,
           "title": "Скорость движения",
           "type": "integer"
         },
         "move_time": {
           "default": 0,
+          "required": false,
           "title": "Время движения",
           "type": "integer"
         }
@@ -504,16 +560,19 @@
       "properties": {
         "code": {
           "default": "",
+          "required": true,
           "title": "Код",
           "type": "string"
         },
         "name": {
           "default": "",
+          "required": true,
           "title": "Название",
           "type": "string"
         },
         "length": {
           "default": 0,
+          "required": true,
           "title": "Длина вагона",
           "type": "integer"
         },
@@ -521,12 +580,14 @@
           "items": {
             "type": "string"
           },
+          "multiple": true,
+          "required": true,
           "title": "Продукты",
           "type": "array",
           "x-relation": {
-            "to_table": "cargoes",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "cargoes"
           }
         }
       },
@@ -538,41 +599,46 @@
       "properties": {
         "date": {
           "default": "",
+          "required": true,
           "title": "Дата поступления",
           "type": "string"
         },
         "type_code": {
           "default": "",
+          "required": true,
           "title": "Тип",
           "type": "string",
           "x-relation": {
-            "to_table": "wagon_types",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "wagon_types"
           }
         },
         "cargo_code": {
           "default": "",
+          "required": true,
           "title": "Продукт",
           "type": "string",
           "x-relation": {
-            "to_table": "cargoes",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "cargoes"
           }
         },
         "track": {
           "default": "",
+          "required": true,
           "title": "Путь",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         },
         "quantity": {
           "default": 0,
+          "required": true,
           "title": "Количество",
           "type": "integer"
         }
@@ -585,36 +651,40 @@
       "properties": {
         "type_code": {
           "default": "",
+          "required": true,
           "title": "Тип",
           "type": "string",
           "x-relation": {
-            "to_table": "wagon_types",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "wagon_types"
           }
         },
         "cargo_code": {
           "default": "",
+          "required": true,
           "title": "Продукт",
           "type": "string",
           "x-relation": {
-            "to_table": "cargoes",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "cargoes"
           }
         },
         "track": {
           "default": "",
+          "required": true,
           "title": "Путь",
           "type": "string",
           "x-relation": {
-            "to_table": "tracks",
+            "display_field": "name",
             "link_key": "code",
-            "display_field": "name"
+            "to_table": "tracks"
           }
         },
         "quantity": {
           "default": 0,
+          "required": true,
           "title": "Количество",
           "type": "integer"
         }
@@ -659,154 +729,120 @@
       "items": {
         "$ref": "#/$defs/Cargoes"
       },
-      "title": "Грузы",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Cargoes",
+      "type": "array"
     },
     "tracks": {
       "items": {
         "$ref": "#/$defs/Tracks"
       },
-      "title": "Пути",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Tracks",
+      "type": "array"
     },
     "tracks_links": {
       "items": {
         "$ref": "#/$defs/TracksLinks"
       },
-      "title": "ПутиСвязи",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Tracks Links",
+      "type": "array"
     },
     "locos": {
       "items": {
         "$ref": "#/$defs/Locos"
       },
-      "title": "Локомотивы",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Locos",
+      "type": "array"
     },
     "locos_manevours": {
       "items": {
         "$ref": "#/$defs/LocosManevours"
       },
-      "title": "МаневровыеРайоны",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Locos Manevours",
+      "type": "array"
     },
     "load_racks": {
       "items": {
         "$ref": "#/$defs/LoadRacks"
       },
-      "title": "Эстакады",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Load Racks",
+      "type": "array"
     },
     "load_rack_variants": {
       "items": {
         "$ref": "#/$defs/LoadRackVariantsData"
       },
-      "title": "ЭстакадыВарианты",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Load Rack Variants",
+      "type": "array"
     },
     "wagon_types": {
       "items": {
         "$ref": "#/$defs/WagonTypes"
       },
-      "title": "ТипыВагонов",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Wagon Types",
+      "type": "array"
     },
     "operation_time": {
       "items": {
         "$ref": "#/$defs/OperationTime"
       },
-      "title": "ВремяОпераций",
-      "type": "array",
-      "x-group": "master_tables",
-      "x-group-name": "Мастер-таблицы"
+      "title": "Operation Time",
+      "type": "array"
     },
     "shipments": {
       "items": {
         "$ref": "#/$defs/Shipment"
       },
-      "title": "Отгрузка",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Shipments",
+      "type": "array"
     },
     "locos_inits": {
       "items": {
         "$ref": "#/$defs/LocosInits"
       },
-      "title": "ЛокомотивыНачало",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Locos Inits",
+      "type": "array"
     },
     "locos_intransit": {
       "items": {
         "$ref": "#/$defs/LocosIntransit"
       },
-      "title": "ЛокомотивыВПути",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Locos Intransit",
+      "type": "array"
     },
     "load_racks_process": {
       "items": {
         "$ref": "#/$defs/LoadRacksProcess"
       },
-      "title": "ЭстакадыНалив",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Load Racks Process",
+      "type": "array"
     },
     "wagons_inits": {
       "items": {
         "$ref": "#/$defs/WagonsInits"
       },
-      "title": "ВагоныНачало",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Wagons Inits",
+      "type": "array"
     },
     "wagons_arrival": {
       "items": {
         "$ref": "#/$defs/WagonsArrivals"
       },
-      "title": "ВагоныПоступление",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Wagons Arrival",
+      "type": "array"
     },
     "resource_unavailable": {
       "items": {
         "$ref": "#/$defs/ResourceUnavailable"
       },
-      "title": "РесурсНедоступность",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Resource Unavailable",
+      "type": "array"
     },
     "locos_shift_change": {
       "items": {
         "$ref": "#/$defs/LocosShiftChange"
       },
-      "title": "ЛокомотивыСмена",
-      "type": "array",
-      "x-group": "detail_tables",
-      "x-group-name": "Детальные таблицы"
+      "title": "Locos Shift Change",
+      "type": "array"
     },
     "excel_pages_columns": {
       "items": {

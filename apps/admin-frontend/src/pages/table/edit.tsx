@@ -3,7 +3,6 @@ import { useCreate } from "@refinedev/core";
 import {
   type AdminFieldMeta,
   type CreateAdminFieldInput,
-  type UpdateAdminTableInput,
 } from "@ommr/shared";
 
 import { Button } from "@/components/ui/button";
@@ -79,7 +78,20 @@ export function TableEditPage() {
 
   return (
     <EditView>
-      <EditViewHeader title="Редактирование таблицы" />
+      <EditViewHeader
+        title="Редактирование таблицы"
+        actionsSlot={
+          <span className="text-sm text-muted-foreground">
+            {tableEdit.isTableAutoSaving
+              ? "Сохраняем..."
+              : tableEdit.tableAutoSave.status === "error"
+                ? "Ошибка автосохранения"
+                : tableEdit.tableAutoSave.status === "success"
+                  ? "Сохранено"
+                  : "Автосохранение включено"}
+          </span>
+        }
+      />
 
       {!tableEdit.isSuccessLoaded && <LoadingBanner />}
 

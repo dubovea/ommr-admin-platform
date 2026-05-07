@@ -1,6 +1,7 @@
-import { Control } from "react-hook-form";
+import type { Control } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import { type AdminTableActionKey } from "@ommr/shared";
+import type { AdminTableFormValues } from "@ommr/shared/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -9,8 +10,7 @@ type Mode = "create" | "edit" | "view";
 
 type ActionsFormProps = {
   mode: Mode;
-  control: Control<any>;
-  isUpdating?: boolean;
+  control: Control<AdminTableFormValues>;
 };
 
 const ACTIONS: Array<[AdminTableActionKey, string]> = [
@@ -20,12 +20,8 @@ const ACTIONS: Array<[AdminTableActionKey, string]> = [
   ["canDelete", "Удаление"],
 ];
 
-export function ActionsForm({
-  mode,
-  control,
-  isUpdating = false,
-}: ActionsFormProps) {
-  const isDisabled = mode === "view" || isUpdating;
+export function ActionsForm({ mode, control }: ActionsFormProps) {
+  const isDisabled = mode === "view";
 
   return (
     <Card>

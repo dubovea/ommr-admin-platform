@@ -1,19 +1,18 @@
 import { useState } from "react";
-import { Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type HttpError,
   useCreate,
   useInvalidate,
   useList,
   useNavigation,
+  useNotification,
 } from "@refinedev/core";
 import { useForm } from "@refinedev/react-hook-form";
 import { Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 
 import type {
   AdminFieldMeta,
-  AdminTableActionKey,
   AdminTableMeta,
   CreateAdminFieldInput,
   CreateAdminTableInput,
@@ -23,14 +22,13 @@ import type {
   FieldValidationMeta,
 } from "@ommr/shared";
 import {
-  ADMIN_TABLE_GROUP_OPTIONS,
-  ADMIN_TABLE_SOURCE_LABELS,
-  ADMIN_TABLE_SOURCES,
-  ADMIN_TABLE_STATUS_LABELS,
-  ADMIN_TABLE_STATUSES,
   DEFAULT_FIELD_VALIDATION,
   FIELD_INPUT_TYPE_LABELS,
 } from "@ommr/shared";
+import {
+  createTableSchema,
+  type AdminTableFormValues,
+} from "@ommr/shared/zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,33 +36,12 @@ import {
   CreateView,
   CreateViewHeader,
 } from "@/components/refine-ui/views/create-view";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { LoadingBanner } from "@/components/LoadingBanner";
 import { FieldInspector } from "@/components/FieldInspector";
-
-type TableCreateValues = CreateAdminTableInput & {
-  canList: boolean;
-  canCreate: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
-  description: string;
-  status: AdminTableMeta["status"];
-  source: AdminTableMeta["source"];
-  group: string | null;
-  groupName: string | null;
-  showInMenu: boolean;
-};
+import { TableInfoForm } from "@/components/form/TableInfoForm";
+import { toCreateTablePayload } from "@/lib/table-form-mappers";
+import { getErrorMessage, getFirstFormError } from "@/lib/errors";
 
 type FieldDraft = Omit<CreateAdminFieldInput, "tableId"> & {
   tempId: string;
@@ -74,10 +51,28 @@ type FieldDraft = Omit<CreateAdminFieldInput, "tableId"> & {
 };
 
 const NEW_TABLE_TEMP_ID = "__new_table__";
-const EMPTY_GROUP_VALUE = "__empty_group__";
 
 const DEFAULT_OPTIONS_JSON = "[]";
 const DEFAULT_VALUE_JSON = "null";
+
+const defaultTableValues: AdminTableFormValues = {
+  name: "",
+  label: "",
+  description: null,
+
+  status: "draft",
+  source: "manual",
+  icon: "table",
+
+  group: null,
+  groupName: null,
+  showInMenu: true,
+
+  canList: true,
+  canCreate: true,
+  canEdit: true,
+  canDelete: true,
+};
 
 function createFieldDraft(index = 1): FieldDraft {
   return {
@@ -161,6 +156,7 @@ function fieldPatchToDraftPatch(
 export function TableCreatePage() {
   const invalidate = useInvalidate();
   const { edit } = useNavigation();
+  const { open } = useNotification();
 
   const { query: tablesListData } = useList<AdminTableMeta>({
     resource: "tables",
@@ -179,36 +175,21 @@ export function TableCreatePage() {
     fields[0]?.tempId ?? null,
   );
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    refineCore: { formLoading },
-  } = useForm<AdminTableMeta, HttpError, TableCreateValues>({
+  const tableForm = useForm<AdminTableMeta, HttpError, AdminTableFormValues>({
+    resolver: zodResolver(createTableSchema),
+    mode: "onChange",
     refineCoreProps: {
       resource: "tables",
       action: "create",
       redirect: false,
     },
-    defaultValues: {
-      name: "",
-      label: "",
-      description: "",
-      status: "draft",
-      source: "manual",
-
-      group: null,
-      groupName: null,
-      showInMenu: true,
-
-      canList: true,
-      canCreate: true,
-      canEdit: true,
-      canDelete: true,
-    } as Partial<TableCreateValues>,
+    defaultValues: defaultTableValues,
   });
+
+  const {
+    handleSubmit,
+    refineCore: { formLoading },
+  } = tableForm;
 
   const { mutate: createTable, mutation: mutationTable } =
     useCreate<AdminTableMeta>();
@@ -299,29 +280,17 @@ export function TableCreatePage() {
     });
   }
 
-  async function saveTable(values: TableCreateValues) {
+  async function saveTable(values: AdminTableFormValues) {
     if (fields.length === 0) {
-      toast.error("Добавьте хотя бы одно поле");
+      open?.({
+        type: "error",
+        message: "Добавьте хотя бы одно поле",
+      });
       return;
     }
 
     try {
-      const createdTable = await createTableAsync({
-        name: values.name.trim(),
-        label: values.label.trim(),
-        description: values.description || null,
-        status: values.status,
-        source: values.source,
-
-        group: values.group ?? null,
-        groupName: values.groupName ?? null,
-        showInMenu: values.showInMenu ?? true,
-
-        canList: values.canList,
-        canCreate: values.canCreate,
-        canEdit: values.canEdit,
-        canDelete: values.canDelete,
-      });
+      const createdTable = await createTableAsync(toCreateTablePayload(values));
 
       for (const [index, field] of fields.entries()) {
         if (!field.name.trim()) {
@@ -385,21 +354,42 @@ export function TableCreatePage() {
         invalidates: ["list"],
       });
 
+      open?.({
+        type: "success",
+        message: "Таблица создана",
+        description: `Создано полей: ${fields.length}`,
+      });
+
       edit("tables", createdTable.id);
-    } catch (error) {}
+    } catch (error) {
+      open?.({
+        type: "error",
+        message: "Не удалось создать таблицу",
+        description: getErrorMessage(error, "Проверьте данные и попробуйте ещё раз"),
+      });
+    }
   }
+
+  const handleSave = handleSubmit(saveTable, (errors) => {
+    open?.({
+      type: "error",
+      message: "Форма заполнена некорректно",
+      description: getFirstFormError(errors, "Проверьте обязательные поля формы"),
+    });
+  });
 
   return (
     <CreateView>
-      <CreateViewHeader title="Создание таблицы" />
+      <CreateViewHeader
+        title="Создание таблицы"
+        actionsSlot={
+          <Button onClick={() => void handleSave()} disabled={isSaving}>
+            {isSaving ? "Создание..." : "Создать таблицу"}
+          </Button>
+        }
+      />
 
       {tablesListData.isLoading && <LoadingBanner />}
-
-      <div className="flex justify-end">
-        <Button onClick={handleSubmit(saveTable)} disabled={isSaving}>
-          {isSaving ? "Создание..." : "Создать таблицу"}
-        </Button>
-      </div>
 
       <Card className="border-blue-200 bg-blue-50/40 shadow-none">
         <CardContent className="flex gap-4 p-4">
@@ -430,177 +420,12 @@ export function TableCreatePage() {
 
       <div className="grid grid-cols-[minmax(0,1fr)_420px] gap-5">
         <section className="space-y-5">
-          <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-5">
-            <Card>
-              <CardHeader>
-                <CardTitle>Основная информация</CardTitle>
-              </CardHeader>
-
-              <CardContent className="grid grid-cols-[180px_1fr] gap-3">
-                <FormLabel>Отображаемое имя *</FormLabel>
-                <Input {...register("label")} />
-
-                <FormLabel>Имя таблицы в БД *</FormLabel>
-                <Input {...register("name")} />
-
-                <FormLabel>Группировка таблицы</FormLabel>
-                <Controller
-                  name="group"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? EMPTY_GROUP_VALUE}
-                      onValueChange={(value) => {
-                        if (value === EMPTY_GROUP_VALUE) {
-                          field.onChange(null);
-
-                          setValue("groupName", null, {
-                            shouldDirty: true,
-                            shouldTouch: true,
-                          });
-
-                          return;
-                        }
-
-                        const selectedGroup = ADMIN_TABLE_GROUP_OPTIONS.find(
-                          (group) => group.id === value,
-                        );
-
-                        field.onChange(value);
-
-                        setValue("groupName", selectedGroup?.label ?? value, {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                        });
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Выберите группу" />
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        <SelectItem value={EMPTY_GROUP_VALUE}>
-                          Без группы
-                        </SelectItem>
-
-                        {ADMIN_TABLE_GROUP_OPTIONS.map((group) => (
-                          <SelectItem key={group.id} value={group.id}>
-                            {group.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-
-                <FormLabel>Описание</FormLabel>
-                <Textarea {...register("description")} />
-
-                <FormLabel>Статус</FormLabel>
-                <Select
-                  value={watch("status")}
-                  onValueChange={(value) =>
-                    setValue("status", value as AdminTableMeta["status"], {
-                      shouldDirty: true,
-                      shouldTouch: true,
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {ADMIN_TABLE_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {ADMIN_TABLE_STATUS_LABELS[status]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <FormLabel>Источник</FormLabel>
-                <Select
-                  value={watch("source")}
-                  onValueChange={(value) =>
-                    setValue("source", value as AdminTableMeta["source"], {
-                      shouldDirty: true,
-                      shouldTouch: true,
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {ADMIN_TABLE_SOURCES.map((source) => (
-                      <SelectItem key={source} value={source}>
-                        {ADMIN_TABLE_SOURCE_LABELS[source]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Доступные действия</CardTitle>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                {(
-                  [
-                    ["canList", "Список"],
-                    ["canCreate", "Создание"],
-                    ["canEdit", "Редактирование"],
-                    ["canDelete", "Удаление"],
-                  ] satisfies Array<[AdminTableActionKey, string]>
-                ).map(([key, label]) => (
-                  <Controller
-                    key={key}
-                    name={key}
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">{label}</span>
-
-                        <Switch
-                          checked={Boolean(field.value)}
-                          onCheckedChange={field.onChange}
-                        />
-                      </div>
-                    )}
-                  />
-                ))}
-
-                <Separator />
-
-                <Controller
-                  name="showInMenu"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <div className="text-sm">Отображать в меню</div>
-
-                        <div className="text-xs text-muted-foreground">
-                          Если выключено, таблица останется в metadata, но не
-                          попадёт в sidebar.
-                        </div>
-                      </div>
-
-                      <Switch
-                        checked={Boolean(field.value)}
-                        onCheckedChange={field.onChange}
-                      />
-                    </div>
-                  )}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <TableInfoForm
+            mode="create"
+            control={tableForm.control}
+            register={tableForm.register}
+            setValue={tableForm.setValue}
+          />
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
@@ -684,13 +509,5 @@ export function TableCreatePage() {
         </Card>
       </div>
     </CreateView>
-  );
-}
-
-function FormLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="pt-2 text-sm font-medium text-muted-foreground">
-      {children}
-    </div>
   );
 }

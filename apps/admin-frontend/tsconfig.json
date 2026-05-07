@@ -3,20 +3,24 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
-
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "noEmit": true,
-
-    "types": ["vite/client"],
-
+    "types": [
+      "vite/client"
+    ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
@@ -27,12 +31,13 @@
   "exclude": [
     "node_modules",
     "dist",
-
     "src/components/ui/carousel.tsx",
     "src/components/ui/chart.tsx",
     "src/components/ui/drawer.tsx",
     "src/components/ui/input-otp.tsx",
     "src/components/ui/resizable.tsx",
-    "src/components/ui/sonner.tsx"
+    "src/components/ui/sonner.tsx",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

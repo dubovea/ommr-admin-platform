@@ -33,12 +33,16 @@ type ApiErrorPayload = {
 
   errors?: HttpError["errors"];
   issues?: ApiErrorIssue[];
+  field?: string;
+  reason?: string;
 
   data?: {
     message?: string;
     error?: string;
     errors?: HttpError["errors"];
     issues?: ApiErrorIssue[];
+    field?: string;
+    reason?: string;
   };
 };
 
@@ -91,14 +95,33 @@ async function buildHttpError(response: Response): Promise<HttpError> {
 
   const issues = getErrorIssues(payload);
 
+  const issueErrors = normalizeIssueErrors(issues);
+  const field = payload?.field ?? payload?.data?.field;
+  const fieldReason =
+    payload?.reason ||
+    payload?.data?.reason ||
+    payload?.message ||
+    payload?.error ||
+    payload?.data?.message ||
+    payload?.data?.error;
+
+  const fieldError =
+    field && fieldReason
+      ? {
+          [field]: fieldReason,
+        }
+      : undefined;
+
   const errors =
-    payload?.errors ?? payload?.data?.errors ?? normalizeIssueErrors(issues);
+    payload?.errors ?? payload?.data?.errors ?? issueErrors ?? fieldError;
 
   const message =
     payload?.message ||
     payload?.error ||
     payload?.data?.message ||
     payload?.data?.error ||
+    payload?.reason ||
+    payload?.data?.reason ||
     getFirstIssueMessage(issues) ||
     text ||
     response.statusText ||
@@ -185,6 +208,8 @@ const options = {
 
       return getListTotal(payload);
     },
+
+    transformError,
   },
 
   getOne: {
@@ -197,6 +222,8 @@ const options = {
 
       return getOneData(payload);
     },
+
+    transformError,
   },
 
   create: {
@@ -267,6 +294,8 @@ const options = {
 
       return getListData(payload);
     },
+
+    transformError,
   },
 } satisfies CreateDataProviderOptions;
 

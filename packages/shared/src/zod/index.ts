@@ -15,8 +15,8 @@ export const tableStatusSchema = z.enum(ADMIN_TABLE_STATUSES);
 export const tableSourceSchema = z.enum(ADMIN_TABLE_SOURCES);
 
 export const fieldOptionSchema = z.object({
-  label: z.string(),
-  value: z.string(),
+  label: z.string().min(1, "Введите label варианта"),
+  value: z.string().min(1, "Введите value варианта"),
 });
 
 export const fieldValidationSchema = z.object({
@@ -53,41 +53,43 @@ export const fieldDefaultValueSchema = z.union([
   z.record(z.string(), z.unknown()),
 ]);
 
-export const createTableSchema = z.object({
-  name: z.string().min(1),
-  label: z.string().min(1),
-  group: z.string().nullable().optional(),
-  groupName: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
-  status: tableStatusSchema.default("needs_setup"),
+export const tableFormSchema = z.object({
+  name: z.string().trim().min(1, "Введите имя таблицы в БД"),
+  label: z.string().trim().min(1, "Введите отображаемое имя"),
+
+  group: z.string().nullable().default(null),
+  groupName: z.string().nullable().default(null),
+  description: z.string().nullable().default(null),
+
+  status: tableStatusSchema.default("draft"),
   source: tableSourceSchema.default("manual"),
-  icon: z.string().default("table"),
+  icon: z.string().nullable().default("table"),
+
   showInMenu: z.boolean().default(true),
-}) satisfies z.ZodType<CreateAdminTableInput>;
+  canList: z.boolean().default(true),
+  canCreate: z.boolean().default(true),
+  canEdit: z.boolean().default(true),
+  canDelete: z.boolean().default(true),
+});
 
-export type CreateTableDto = CreateAdminTableInput;
+export type AdminTableFormValues = z.infer<typeof tableFormSchema>;
 
-export const updateTableSchema = z.object({
-  label: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
-  group: z.string().nullable().optional(),
-  groupName: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
-  status: tableStatusSchema.optional(),
-  icon: z.string().nullable().optional(),
-  showInMenu: z.boolean().optional(),
-  canList: z.boolean().optional(),
-  canCreate: z.boolean().optional(),
-  canEdit: z.boolean().optional(),
-  canDelete: z.boolean().optional(),
-}) satisfies z.ZodType<UpdateAdminTableInput>;
+export const createTableSchema = tableFormSchema satisfies z.ZodType<CreateAdminTableInput>;
 
-export type UpdateTableDto = UpdateAdminTableInput;
+export type CreateTableDto = z.infer<typeof createTableSchema>;
+
+export const updateTableSchema = tableFormSchema
+  .omit({
+    source: true,
+  })
+  .partial() satisfies z.ZodType<UpdateAdminTableInput>;
+
+export type UpdateTableDto = z.infer<typeof updateTableSchema>;
 
 export const createFieldSchema = z.object({
   tableId: z.uuid(),
-  name: z.string().min(1),
-  label: z.string().min(1),
+  name: z.string().trim().min(1, "Введите имя поля"),
+  label: z.string().trim().min(1, "Введите label поля"),
   dbType: z.string().nullable().optional(),
   inputType: fieldInputTypeSchema,
 
@@ -113,11 +115,11 @@ export const createFieldSchema = z.object({
   sortOrder: z.number().int().positive().optional(),
 }) satisfies z.ZodType<CreateAdminFieldInput>;
 
-export type CreateFieldDto = CreateAdminFieldInput;
+export type CreateFieldDto = z.infer<typeof createFieldSchema>;
 
 export const updateFieldSchema = z.object({
-  name: z.string().min(1).optional(),
-  label: z.string().min(1).optional(),
+  name: z.string().trim().min(1, "Введите имя поля").optional(),
+  label: z.string().trim().min(1, "Введите label поля").optional(),
   dbType: z.string().nullable().optional(),
   inputType: fieldInputTypeSchema.optional(),
 
@@ -141,4 +143,12 @@ export const updateFieldSchema = z.object({
   sortOrder: z.number().int().positive().optional(),
 }) satisfies z.ZodType<UpdateAdminFieldInput>;
 
-export type UpdateFieldDto = UpdateAdminFieldInput;
+export type UpdateFieldDto = z.infer<typeof updateFieldSchema>;
+
+export const importPydanticSchemaRequestSchema = z.object({
+  schema: z.unknown(),
+});
+
+export type ImportPydanticSchemaRequest = z.infer<
+  typeof importPydanticSchemaRequestSchema
+>;
