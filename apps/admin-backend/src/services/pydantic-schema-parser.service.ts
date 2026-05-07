@@ -42,7 +42,7 @@ type JsonSchema = {
   type?: string | string[];
   format?: string;
   properties?: Record<string, JsonSchema>;
-  required?: string[];
+  required?: boolean;
   enum?: unknown[];
   default?: unknown;
   items?: JsonSchema;
@@ -103,7 +103,6 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
   return schemas.map(
     ({ tableName: rawTableName, modelSchema, rootPropertySchema }) => {
       const tableName = toSnakeCase(rawTableName);
-      const required = new Set(modelSchema.required ?? []);
       const tableRootProperties = getTableRootProperties(
         tableName,
         rootPropertySchema,
@@ -125,14 +124,13 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
             const resolved = resolveNullable(fieldSchema);
             const relation = getRelation(resolved);
             const options = getOptions(resolved);
-
             return {
               name: fieldName,
               label: getFieldLabel(fieldName, resolved),
               dbType: getDbType(resolved, relation),
               inputType: relation ? "multiselect" : getInputType(resolved),
 
-              required: required.has(fieldName),
+              required: resolved.required ?? false,
               editable: fieldName !== "id" && !fieldName.endsWith("_at"),
               sortable: true,
               filterable: true,
