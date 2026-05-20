@@ -691,9 +691,331 @@
       },
       "title": "ВагоныНачало",
       "type": "object"
+    },
+    "LocoRoutes": {
+      "properties": {
+        "loco_id": {
+          "default": "",
+          "required": true,
+          "title": "Локомотив",
+          "type": "string",
+          "x-relation": {
+            "display_field": "name",
+            "link_key": "code",
+            "to_table": "locos"
+          }
+        },
+        "movements": {
+          "items": {
+            "properties": {
+              "time": {
+                "default": "",
+                "required": true,
+                "title": "Время начала",
+                "type": "string",
+                "format": "date-time"
+              },
+              "period": {
+                "default": 0,
+                "required": true,
+                "title": "Период",
+                "type": "number"
+              },
+              "arrive_time": {
+                "default": "",
+                "required": true,
+                "title": "Время окончания",
+                "type": "string",
+                "format": "date-time"
+              },
+              "arrive": {
+                "default": 0,
+                "required": true,
+                "title": "Период окончания",
+                "type": "number"
+              },
+              "from": {
+                "default": "",
+                "required": true,
+                "title": "Откуда",
+                "type": "string",
+                "x-relation": {
+                  "display_field": "name",
+                  "link_key": "code",
+                  "to_table": "tracks"
+                }
+              },
+              "to": {
+                "default": "",
+                "required": true,
+                "title": "Куда",
+                "type": "string",
+                "x-relation": {
+                  "display_field": "name",
+                  "link_key": "code",
+                  "to_table": "tracks"
+                }
+              },
+              "cargoes": {
+                "items": {},
+                "multiple": true,
+                "required": true,
+                "title": "Грузы",
+                "type": "array"
+              }
+            },
+            "required": [
+              "time",
+              "period",
+              "arrive_time",
+              "arrive",
+              "from",
+              "to",
+              "cargoes"
+            ],
+            "type": "object"
+          },
+          "multiple": true,
+          "required": true,
+          "title": "Перемещения",
+          "type": "array"
+        }
+      },
+      "title": "Маршруты локомотивов",
+      "type": "object"
+    },
+    "LoadRacksLoading": {
+      "properties": {
+        "time": {
+          "default": "",
+          "required": true,
+          "title": "Время начала",
+          "type": "string",
+          "format": "date-time"
+        },
+        "period": {
+          "default": 0,
+          "required": true,
+          "title": "Период начала",
+          "type": "number"
+        },
+        "time_end": {
+          "default": "",
+          "required": true,
+          "title": "Время окончания",
+          "type": "string",
+          "format": "date-time"
+        },
+        "period_end": {
+          "default": 0,
+          "required": true,
+          "title": "Период окончания",
+          "type": "number"
+        },
+        "load_rack": {
+          "default": "",
+          "required": true,
+          "title": "Эстакада",
+          "type": "string",
+          "x-relation": {
+            "display_field": "name",
+            "link_key": "code",
+            "to_table": "load_racks"
+          }
+        },
+        "variant": {
+          "default": "",
+          "required": true,
+          "title": "Вариант эстакады",
+          "type": "string",
+          "x-relation": {
+            "display_field": "variant_name",
+            "link_key": "variant_code",
+            "to_table": "load_rack_variants"
+          }
+        },
+        "track": {
+          "default": "",
+          "required": true,
+          "title": "Путь",
+          "type": "string",
+          "x-relation": {
+            "display_field": "name",
+            "link_key": "code",
+            "to_table": "tracks"
+          }
+        },
+        "type": {
+          "default": "",
+          "required": true,
+          "title": "Тип операции",
+          "type": "string"
+        },
+        "load_length": {
+          "default": 0,
+          "required": true,
+          "title": "Длина налива",
+          "type": "number"
+        }
+      },
+      "title": "Занятость эстакад",
+      "type": "object"
+    },
+    "Routes": {
+      "properties": {
+        "loco": {
+          "default": "",
+          "required": true,
+          "title": "Локомотив",
+          "type": "string",
+          "x-relation": {
+            "display_field": "name",
+            "link_key": "code",
+            "to_table": "locos"
+          }
+        },
+        "legs": {
+          "items": {
+            "properties": {
+              "time": {
+                "default": "",
+                "required": true,
+                "title": "Время начала",
+                "type": "string",
+                "format": "date-time"
+              },
+              "period": {
+                "default": 0,
+                "required": true,
+                "title": "Период",
+                "type": "number"
+              },
+              "arrive_time": {
+                "default": "",
+                "required": true,
+                "title": "Время окончания",
+                "type": "string",
+                "format": "date-time"
+              },
+              "arrive": {
+                "default": 0,
+                "required": true,
+                "title": "Период окончания",
+                "type": "number"
+              },
+              "from": {
+                "default": "",
+                "required": true,
+                "title": "Откуда",
+                "type": "string",
+                "x-relation": {
+                  "display_field": "name",
+                  "link_key": "code",
+                  "to_table": "tracks"
+                }
+              },
+              "to": {
+                "default": "",
+                "required": true,
+                "title": "Куда",
+                "type": "string",
+                "x-relation": {
+                  "display_field": "name",
+                  "link_key": "code",
+                  "to_table": "tracks"
+                }
+              },
+              "cargoes": {
+                "items": {},
+                "multiple": true,
+                "required": true,
+                "title": "Состав",
+                "type": "array"
+              }
+            },
+            "required": [
+              "time",
+              "period",
+              "arrive_time",
+              "arrive",
+              "from",
+              "to",
+              "cargoes"
+            ],
+            "type": "object"
+          },
+          "multiple": true,
+          "required": true,
+          "title": "Плечи маршрута",
+          "type": "array"
+        }
+      },
+      "title": "Маршруты",
+      "type": "object"
+    },
+    "LoadingDaily": {
+      "properties": {
+        "load_rack": {
+          "default": "",
+          "required": true,
+          "title": "Эстакада",
+          "type": "string",
+          "x-relation": {
+            "display_field": "name",
+            "link_key": "code",
+            "to_table": "load_racks"
+          }
+        },
+        "cargo": {
+          "default": "",
+          "required": true,
+          "title": "Груз",
+          "type": "string"
+        },
+        "date": {
+          "default": "",
+          "required": true,
+          "title": "Дата",
+          "type": "string",
+          "format": "date"
+        },
+        "volume": {
+          "default": 0,
+          "required": true,
+          "title": "Объем",
+          "type": "number"
+        }
+      },
+      "title": "Суточная загрузка эстакад",
+      "type": "object"
+    },
+    "ShipmentsDaily": {
+      "properties": {
+        "cargo": {
+          "default": "",
+          "required": true,
+          "title": "Груз",
+          "type": "string"
+        },
+        "date": {
+          "default": "",
+          "required": true,
+          "title": "Дата",
+          "type": "string",
+          "format": "date"
+        },
+        "volume": {
+          "default": 0,
+          "required": true,
+          "title": "Объем",
+          "type": "number"
+        }
+      },
+      "title": "Суточная отгрузка",
+      "type": "object"
     }
   },
-  "description": "Основная модель данных, содержащая всю информацию о железнодорожном маневре.\n\nAttributes:\n    model_name (str): Наименование модели\n    status (str): Статус обработки\n    messages (str): Сообщения системы\n    start_date (str): Дата начала маневра\n    plan_horizon (int): Плановый горизонт (дней)\n    period_length (int): Длительность периода (часов)\n    cargoes (list[Cargoes]): Список грузов\n    tracks (list[Tracks]): Список путей\n    tracks_links (list[TracksLinks]): Список связей между путями (вариант 1)\n    locos (list[Locos]): Список локомотивов\n    load_racks (list[LoadRacks]): Список погрузочных эстакад\n    load_rack_variants (list[LoadRackVariantsData]): Варианты конфигураций эстакад\n    wagon_types (list[WagonTypes]): Типы вагонов\n    operation_time (list[OperationTime]): Время операций\n    shipments (list[Shipment]): Отгрузки\n    locos_inits (list[LocosInits]): Начальное положение локомотивов\n    locos_intransit (list[LocosIntransit]): Локомотивы в пути\n    load_racks_process (list[LoadRacksProcess]): Эстакады налива\n    wagons_inits (list[WagonsInits]): Начальное положение вагонов\n    wagons_arrival (list[WagonsArrivals]): Прибывающие вагоны\n    excel_pages_columns (list[dict[str, list]]): Техническое поле для хранения данных\n    о колонках Excel",
+  "description": "Основная модель данных, содержащая всю информацию о железнодорожном маневре.\n\nAttributes:\n    model_name (str): Наименование модели\n    status (str): Статус обработки\n    messages (str): Сообщения системы\n    start_date (str): Дата начала маневра\n    plan_horizon (int): Плановый горизонт (дней)\n    period_length (int): Длительность периода (часов)\n    cargoes (list[Cargoes]): Список грузов\n    tracks (list[Tracks]): Список путей\n    tracks_links (list[TracksLinks]): Список связей между путями (вариант 1)\n    locos (list[Locos]): Список локомотивов\n    load_racks (list[LoadRacks]): Список погрузочных эстакад\n    load_rack_variants (list[LoadRackVariantsData]): Варианты конфигураций эстакад\n    wagon_types (list[WagonTypes]): Типы вагонов\n    operation_time (list[OperationTime]): Время операций\n    shipments (list[Shipment]): Отгрузки\n    locos_inits (list[LocosInits]): Начальное положение локомотивов\n    locos_intransit (list[LocosIntransit]): Локомотивы в пути\n    load_racks_process (list[LoadRacksProcess]): Эстакады налива\n    wagons_inits (list[WagonsInits]): Начальное положение вагонов\n    wagons_arrival (list[WagonsArrivals]): Прибывающие вагоны\n    loco_routes (list[LocoRoutes]): Маршруты локомотивов\n    load_racks_loading (list[LoadRacksLoading]): Занятость эстакад\n    routes (list[Routes]): Маршруты\n    loading_daily (list[LoadingDaily]): Суточная загрузка эстакад\n    shipments_daily (list[ShipmentsDaily]): Суточная отгрузка\n    excel_pages_columns (list[dict[str, list]]): Техническое поле для хранения данных\n    о колонках Excel",
   "properties": {
     "model_name": {
       "default": "",
@@ -842,6 +1164,41 @@
         "$ref": "#/$defs/LocosShiftChange"
       },
       "title": "Locos Shift Change",
+      "type": "array"
+    },
+    "loco_routes": {
+      "items": {
+        "$ref": "#/$defs/LocoRoutes"
+      },
+      "title": "Маршруты локомотивов",
+      "type": "array"
+    },
+    "load_racks_loading": {
+      "items": {
+        "$ref": "#/$defs/LoadRacksLoading"
+      },
+      "title": "Занятость эстакад",
+      "type": "array"
+    },
+    "routes": {
+      "items": {
+        "$ref": "#/$defs/Routes"
+      },
+      "title": "Маршруты",
+      "type": "array"
+    },
+    "loading_daily": {
+      "items": {
+        "$ref": "#/$defs/LoadingDaily"
+      },
+      "title": "Суточная загрузка эстакад",
+      "type": "array"
+    },
+    "shipments_daily": {
+      "items": {
+        "$ref": "#/$defs/ShipmentsDaily"
+      },
+      "title": "Суточная отгрузка",
       "type": "array"
     },
     "excel_pages_columns": {
