@@ -1,4 +1,6 @@
-FROM node:22-alpine AS build
+#ARG IMAGE_PREFIX=harbor.ds.ecpk.sibintek.ru/proj-irommr/
+ARG IMAGE_PREFIX=
+FROM ${IMAGE_PREFIX}node:22-alpine AS build
 
 WORKDIR /app
 
@@ -27,7 +29,7 @@ COPY apps/admin-frontend ./apps/admin-frontend
 
 RUN yarn build
 
-FROM node:22-alpine AS runtime
+FROM ${IMAGE_PREFIX}node:22-alpine AS runtime
 
 WORKDIR /app
 
