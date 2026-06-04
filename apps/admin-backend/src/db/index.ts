@@ -7,7 +7,7 @@ const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL is required. Copy apps/admin-backend/.env.example to apps/admin-backend/.env",
+    "DATABASE_URL is required. Set it in .env and run Docker with --env-file .env, or export it before starting the backend.",
   );
 }
 

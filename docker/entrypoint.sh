@@ -8,6 +8,18 @@ set -eu
 : "${NGINX_CLIENT_MAX_BODY_SIZE:=20m}"
 : "${API_PROXY_PASS:=http://127.0.0.1:${PORT}}"
 
+if [ -z "${DATABASE_URL:-}" ]; then
+  cat >&2 <<'EOF'
+DATABASE_URL is required.
+
+Pass it to the container with:
+  docker run --env-file .env -p 5174:80 ommr-admin-platform
+
+Or set DATABASE_URL manually in Docker Desktop / your container runtime.
+EOF
+  exit 1
+fi
+
 export HOST PORT NGINX_PORT JSON_BODY_LIMIT NGINX_CLIENT_MAX_BODY_SIZE API_PROXY_PASS
 
 envsubst '${NGINX_PORT} ${NGINX_CLIENT_MAX_BODY_SIZE} ${API_PROXY_PASS}' \
@@ -19,6 +31,11 @@ backend_pid=$!
 
 nginx -g "daemon off;" &
 nginx_pid=$!
+
+cat <<EOF
+[web:container] http://127.0.0.1:${NGINX_PORT}
+[backend:internal] ${API_PROXY_PASS}
+EOF
 
 shutdown() {
   kill "$backend_pid" "$nginx_pid" 2>/dev/null || true

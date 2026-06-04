@@ -52,6 +52,8 @@ docker run --rm --name ommr-admin-platform --env-file .env -p 5174:80 ommr-admin
 - API: http://localhost:5174/api/admin
 - Health: http://localhost:5174/health
 
+Публичный порт на хосте задается левой частью `-p 5174:80`. Внутри контейнера nginx слушает `80`, а backend слушает только внутренний `127.0.0.1:4000`.
+
 Docker-образ запускает внутри одного контейнера:
 
 - `admin-backend` на `127.0.0.1:4000`
@@ -59,6 +61,8 @@ Docker-образ запускает внутри одного контейне�
 - `nginx`, который отдает frontend и проксирует `/api/*` и `/health` в backend
 
 База данных не поднимается внутри контейнера. Укажите внешнюю PostgreSQL строку в `DATABASE_URL` и примените схему через `yarn db:push`.
+
+Если запускаете образ вручную или через Docker Desktop, обязательно передайте переменную `DATABASE_URL`. Для CLI-запуска используйте `--env-file .env` или `-e DATABASE_URL=...`.
 
 ## ENV
 

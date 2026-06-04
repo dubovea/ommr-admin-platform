@@ -34,5 +34,5 @@ app.use("/api/admin", adminRouter);
 app.use(errorHandler);
 
 app.listen(port, host, () => {
-  console.log(`[api] http://${host}:${port}`);
+  console.log(`[api:internal] http://${host}:${port}`);
 });
