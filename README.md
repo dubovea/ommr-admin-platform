@@ -7,7 +7,7 @@
 - `apps/admin-frontend` — React + Vite + Refine + shadcn/ui
 - `apps/admin-backend` — Express + Drizzle ORM
 - `packages/shared` — общие типы, DTO, enum-значения, menu/group metadata
-- PostgreSQL через Docker Compose
+- PostgreSQL через `DATABASE_URL`
 
 ## Быстрый старт в разработке
 
@@ -19,7 +19,6 @@ yarn install
 cp apps/admin-backend/.env.example apps/admin-backend/.env
 cp apps/admin-frontend/.env.example apps/admin-frontend/.env
 
-docker compose up -d postgres
 yarn db:push
 yarn dev
 ```
@@ -35,28 +34,31 @@ Frontend в dev использует `VITE_BACKEND_BASE_URL=/api/admin`, а Vite
 ## Запуск всего проекта в Docker
 
 ```bash
-cp .env.docker.example .env
-yarn docker:up
+cp .env.example .env
+yarn docker:build
+yarn docker:run
 ```
 
 Или без Yarn:
 
 ```bash
-docker compose up --build
+docker build -t ommr-admin-platform .
+docker run --rm --name ommr-admin-platform --env-file .env -p 5174:80 ommr-admin-platform
 ```
 
 После запуска:
 
-- Frontend: http://localhost:5174
-- Backend: http://localhost:4000
+- Admin UI: http://localhost:5174
+- API: http://localhost:5174/api/admin
+- Health: http://localhost:5174/health
 
-Docker Compose поднимает:
+Docker-образ запускает внутри одного контейнера:
 
-- `postgres`
-- `backend`
-- `frontend` на nginx, который проксирует `/api/*` в backend
+- `admin-backend` на `127.0.0.1:4000`
+- `admin-frontend` как static-файлы
+- `nginx`, который отдает frontend и проксирует `/api/*` и `/health` в backend
 
-Backend перед стартом выполняет `drizzle-kit push`, чтобы схема БД соответствовала текущему `src/db/schema.ts`.
+База данных не поднимается внутри контейнера. Укажите внешнюю PostgreSQL строку в `DATABASE_URL` и примените схему через `yarn db:push`.
 
 ## ENV
 
@@ -124,9 +126,8 @@ yarn db:generate            # сгенерировать миграции
 yarn db:migrate             # применить миграции
 yarn db:studio              # Drizzle Studio
 
-yarn docker:up              # docker compose up --build
-yarn docker:down            # docker compose down
-yarn docker:logs            # docker compose logs -f
+yarn docker:build           # docker build -t ommr-admin-platform .
+yarn docker:run             # docker run --rm --name ommr-admin-platform --env-file .env -p 5174:80 ommr-admin-platform
 ```
 
 ## Структура
@@ -138,8 +139,9 @@ ommr-admin-platform
 │   └── admin-frontend
 ├── packages
 │   └── shared
-├── docker-compose.yml
-├── .env.docker.example
+├── docker
+├── Dockerfile
+├── .env.example
 ├── package.json
 └── tsconfig.base.json
 ```

@@ -74,15 +74,28 @@ export const tableFormSchema = z.object({
 
 export type AdminTableFormValues = z.infer<typeof tableFormSchema>;
 
-export const createTableSchema = tableFormSchema satisfies z.ZodType<CreateAdminTableInput>;
+export const createTableSchema =
+  tableFormSchema satisfies z.ZodType<CreateAdminTableInput>;
 
 export type CreateTableDto = z.infer<typeof createTableSchema>;
 
-export const updateTableSchema = tableFormSchema
-  .omit({
-    source: true,
-  })
-  .partial() satisfies z.ZodType<UpdateAdminTableInput>;
+export const updateTableSchema = z.object({
+  name: z.string().trim().min(1, "Введите имя таблицы в БД").optional(),
+  label: z.string().trim().min(1, "Введите отображаемое имя").optional(),
+
+  group: z.string().nullable().optional(),
+  groupName: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+
+  status: tableStatusSchema.optional(),
+  icon: z.string().nullable().optional(),
+
+  showInMenu: z.boolean().optional(),
+  canList: z.boolean().optional(),
+  canCreate: z.boolean().optional(),
+  canEdit: z.boolean().optional(),
+  canDelete: z.boolean().optional(),
+}) satisfies z.ZodType<UpdateAdminTableInput>;
 
 export type UpdateTableDto = z.infer<typeof updateTableSchema>;
 

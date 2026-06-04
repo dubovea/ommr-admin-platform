@@ -18,10 +18,8 @@
     "build:admin-frontend": "yarn workspace @ommr/shared build && yarn workspace @ommr/admin-frontend build",
     "preview:admin-frontend": "yarn workspace @ommr/admin-frontend preview",
     "build": "yarn build:shared && yarn workspace @ommr/admin-backend build && yarn workspace @ommr/admin-frontend build",
-    "docker:build": "docker compose build",
-    "docker:up": "docker compose up --build",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f",
+    "docker:build": "docker build -t ommr-admin-platform .",
+    "docker:run": "docker run --rm --name ommr-admin-platform --env-file .env -p 5174:80 ommr-admin-platform",
     "test": "yarn build:shared && yarn workspace @ommr/admin-backend test",
     "typecheck": "yarn typecheck:shared && yarn workspace @ommr/admin-backend typecheck && yarn workspace @ommr/admin-frontend typecheck"
   },

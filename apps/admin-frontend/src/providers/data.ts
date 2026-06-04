@@ -209,7 +209,6 @@ const options = {
       return getListTotal(payload);
     },
 
-    transformError,
   },
 
   getOne: {
@@ -223,7 +222,6 @@ const options = {
       return getOneData(payload);
     },
 
-    transformError,
   },
 
   create: {
@@ -295,7 +293,6 @@ const options = {
       return getListData(payload);
     },
 
-    transformError,
   },
 } satisfies CreateDataProviderOptions;
 

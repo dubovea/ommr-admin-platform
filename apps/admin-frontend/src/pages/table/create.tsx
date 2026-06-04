@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { Resolver } from "react-hook-form";
 import {
   type HttpError,
   useCreate,
@@ -73,6 +74,10 @@ const defaultTableValues: AdminTableFormValues = {
   canEdit: true,
   canDelete: true,
 };
+
+const createTableResolver = zodResolver(createTableSchema) as Resolver<
+  AdminTableFormValues
+>;
 
 function createFieldDraft(index = 1): FieldDraft {
   return {
@@ -176,7 +181,7 @@ export function TableCreatePage() {
   );
 
   const tableForm = useForm<AdminTableMeta, HttpError, AdminTableFormValues>({
-    resolver: zodResolver(createTableSchema),
+    resolver: createTableResolver,
     mode: "onChange",
     refineCoreProps: {
       resource: "tables",

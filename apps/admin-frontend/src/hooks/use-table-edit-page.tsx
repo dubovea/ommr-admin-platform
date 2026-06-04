@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { Resolver } from "react-hook-form";
 import {
   type HttpError,
   useDeleteMany,
@@ -32,6 +33,10 @@ import { useTableSelection } from "@/hooks/use-table-selection";
 import { getErrorMessage } from "@/lib/errors";
 import { toUpdateTablePayload } from "@/lib/table-form-mappers";
 
+const tableFormResolver = zodResolver(tableFormSchema) as Resolver<
+  AdminTableFormValues
+>;
+
 export function useTableEditPage(tableId?: string) {
   const invalidate = useInvalidate();
   const { open } = useNotification();
@@ -57,7 +62,7 @@ export function useTableEditPage(tableId?: string) {
   });
 
   const tableForm = useForm<AdminTableMeta, HttpError, AdminTableFormValues>({
-    resolver: zodResolver(tableFormSchema),
+    resolver: tableFormResolver,
     mode: "onChange",
     refineCoreProps: {
       resource: "tables",
@@ -72,7 +77,10 @@ export function useTableEditPage(tableId?: string) {
         enabled: true,
         debounce: 800,
         invalidateOnUnmount: true,
-        onFinish: toUpdateTablePayload,
+        onFinish: (values) => ({
+          ...values,
+          ...toUpdateTablePayload(values),
+        }),
       },
       onMutationError: (error, _variables, _context, isAutoSave) => {
         open?.({
