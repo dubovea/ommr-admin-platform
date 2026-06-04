@@ -1,0 +1,28 @@
+include:
+  project: ecpk-public/pipelinelib
+  ref: main
+  file: docker-build/.gitlab-ci.yml
+
+variables:
+  APP_ENV_HARBOR_PROJECT: proj-irommr
+  APP_ENV_REPOSITORY_PATH: project/irommr/argocd.git
+  DOCKER_FILE: "Dockerfile"
+  APP_NAME: "irommr-admin"
+  DEPLOY_APP: "false"
+  #SEC_IMAGE_SCAN_ENABLE: "false"
+  ENV_BRANCH: main
+  #CHART_NAME: irommr-admin
+  #CHART_PATH: charts/${CHART_NAME}
+  BUILDER_ADD_OPTS: >-
+    --build-arg IMAGE_PREFIX=${IMAGE_REGISTRY}/${APP_ENV_HARBOR_PROJECT}/
+    --build-arg APP_VERSION=${GitVersion_FullSemVer}
+
+stages:
+  - sast
+  - sca
+  - Test
+  - Build
+  - bca
+  - dast
+  - quality-gate
+  - Release
