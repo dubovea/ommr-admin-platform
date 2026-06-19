@@ -1,4 +1,6 @@
-FROM node:22-alpine AS build
+#ARG IMAGE_PREFIX=harbor.ds.ecpk.sibintek.ru/proj-irommr/
+ARG IMAGE_PREFIX=
+FROM ${IMAGE_PREFIX}node:22-alpine AS build
 
 WORKDIR /app
 
@@ -27,17 +29,17 @@ COPY apps/admin-frontend ./apps/admin-frontend
 
 RUN yarn build
 
-FROM node:22-alpine AS runtime
+FROM ${IMAGE_PREFIX}node:22-alpine AS runtime
 
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV HOST=127.0.0.1
+ENV HOST=0.0.0.0
 ENV PORT=4000
 ENV NGINX_PORT=80
 ENV JSON_BODY_LIMIT=20mb
 ENV NGINX_CLIENT_MAX_BODY_SIZE=20m
-ENV API_PROXY_PASS=http://127.0.0.1:4000
+ENV API_PROXY_PASS=http://0.0.0.0:4000
 ENV YARN_NODE_LINKER=node-modules
 
 RUN apk add --no-cache gettext nginx tini \
