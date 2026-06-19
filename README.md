@@ -74,6 +74,8 @@ Docker-образ запускает внутри одного контейне�
 
 Backend, seed и Drizzle-команды запускают Node с нативным `--env-file` из корня проекта, например `node --env-file=.env.development ...`. Frontend тоже читает env из корня через Vite `envDir`.
 
+Отдельный запуск тоже поддерживается: из корня используйте `yarn dev:admin-backend` / `yarn dev:admin-frontend`, а из `apps/admin-backend` backend-скрипты делегируют в root через `yarn run -T`, чтобы не дублировать env и не хранить относительные пути до корня.
+
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -128,12 +130,18 @@ yarn dev:admin-frontend     # только frontend
 yarn dev:admin-backend      # только backend
 
 yarn build                  # shared typecheck + backend build + frontend build
+yarn start                  # production-preview после build: backend + frontend dist
+yarn start:admin-backend    # только backend из .env.production
+yarn start:admin-frontend   # только frontend dist через vite preview
 yarn typecheck              # typecheck всех workspace
 
 yarn db:push                # применить схему через drizzle-kit push
+yarn db:push:prod           # применить схему к production DB из .env.production
 yarn db:generate            # сгенерировать миграции
 yarn db:migrate             # применить миграции
+yarn db:migrate:prod        # применить миграции к production DB из .env.production
 yarn db:studio              # Drizzle Studio
+yarn db:studio:prod         # Drizzle Studio с production DB из .env.production
 
 yarn docker:build           # docker build -t ommr-admin-platform .
 yarn docker:run             # docker run --rm --name ommr-admin-platform --env-file .env.production -p 5174:80 ommr-admin-platform
