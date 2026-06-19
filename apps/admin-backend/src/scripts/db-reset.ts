@@ -1,7 +1,7 @@
-import "dotenv/config";
 import postgres from "postgres";
+import { getDatabaseConfig } from "../config/database.js";
 
-const sql = postgres(process.env.DATABASE_URL!);
+const sql = postgres(getDatabaseConfig());
 
 async function main() {
   await sql`DROP SCHEMA public CASCADE`;

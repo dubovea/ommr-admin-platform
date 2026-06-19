@@ -8,15 +8,39 @@ set -eu
 : "${NGINX_CLIENT_MAX_BODY_SIZE:=20m}"
 : "${API_PROXY_PASS:=http://127.0.0.1:${PORT}}"
 
-if [ -z "${DATABASE_URL:-}" ]; then
+missing_db_env=""
+
+for var in DB_USER DB_PASSWORD DB_HOST DB_PORT DB_NAME; do
+  eval "value=\${$var:-}"
+
+  if [ -z "$value" ]; then
+    missing_db_env="${missing_db_env} ${var}"
+  fi
+done
+
+if [ -n "$missing_db_env" ]; then
   cat >&2 <<'EOF'
-DATABASE_URL is required.
+Database connection settings are required.
 
 Pass it to the container with:
-  docker run --env-file .env -p 5174:80 ommr-admin-platform
+  docker run --env-file .env.production -p 5174:80 ommr-admin-platform
 
-Or set DATABASE_URL manually in Docker Desktop / your container runtime.
+Or set DB_USER, DB_PASSWORD, DB_HOST, DB_PORT and DB_NAME manually
+in Docker Desktop / your container runtime.
 EOF
+  echo "Missing:${missing_db_env}" >&2
+  exit 1
+fi
+
+case "$DB_PORT" in
+  *[!0-9]*)
+    echo "DB_PORT must be a number." >&2
+    exit 1
+    ;;
+esac
+
+if [ "$DB_PORT" -lt 1 ] || [ "$DB_PORT" -gt 65535 ]; then
+  echo "DB_PORT must be between 1 and 65535." >&2
   exit 1
 fi
 

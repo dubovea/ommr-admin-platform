@@ -7,7 +7,7 @@
 - `apps/admin-frontend` — React + Vite + Refine + shadcn/ui
 - `apps/admin-backend` — Express + Drizzle ORM
 - `packages/shared` — общие типы, DTO, enum-значения, menu/group metadata
-- PostgreSQL через `DATABASE_URL`
+- PostgreSQL через отдельные `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 
 ## Быстрый старт в разработке
 
@@ -16,8 +16,8 @@ corepack enable
 corepack prepare yarn@4.14.1 --activate
 
 yarn install
-cp apps/admin-backend/.env.example apps/admin-backend/.env
-cp apps/admin-frontend/.env.example apps/admin-frontend/.env
+
+# Проверьте и при необходимости отредактируйте .env.development.
 
 yarn db:push
 yarn dev
@@ -34,7 +34,7 @@ Frontend в dev использует `VITE_BACKEND_BASE_URL=/api/admin`, а Vite
 ## Запуск всего проекта в Docker
 
 ```bash
-cp .env.example .env
+# Проверьте и при необходимости отредактируйте .env.production.
 yarn docker:build
 yarn docker:run
 ```
@@ -43,7 +43,7 @@ yarn docker:run
 
 ```bash
 docker build -t ommr-admin-platform .
-docker run --rm --name ommr-admin-platform --env-file .env -p 5174:80 ommr-admin-platform
+docker run --rm --name ommr-admin-platform --env-file .env.production -p 5174:80 ommr-admin-platform
 ```
 
 После запуска:
@@ -60,35 +60,33 @@ Docker-образ запускает внутри одного контейне�
 - `admin-frontend` как static-файлы
 - `nginx`, который отдает frontend и проксирует `/api/*` и `/health` в backend
 
-База данных не поднимается внутри контейнера. Укажите внешнюю PostgreSQL строку в `DATABASE_URL` и примените схему через `yarn db:push`.
+База данных не поднимается внутри контейнера. Укажите внешние PostgreSQL параметры в `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` и примените схему через `yarn db:push`.
 
-Если запускаете образ вручную или через Docker Desktop, обязательно передайте переменную `DATABASE_URL`. Для CLI-запуска используйте `--env-file .env` или `-e DATABASE_URL=...`.
+Если запускаете образ вручную или через Docker Desktop, обязательно передайте переменные `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`. Для CLI-запуска используйте `--env-file .env.production` или набор `-e DB_HOST=... -e DB_PORT=...`.
 
 ## ENV
 
-### Backend
+Единственный источник env для проекта находится в корне:
 
-Файл: `apps/admin-backend/.env.example`
+- `.env.development` — локальная разработка;
+- `.env.production` — production/Docker;
+- `.env.example` — общий шаблон без секретов.
+
+Backend, seed и Drizzle-команды запускают Node с нативным `--env-file` из корня проекта, например `node --env-file=.env.development ...`. Frontend тоже читает env из корня через Vite `envDir`.
 
 ```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=ommr_admin
+DB_USER=ommr
+DB_PASSWORD=ommr_password
+DB_SSL=false
+
 HOST=0.0.0.0
 PORT=4000
 JSON_BODY_LIMIT=20mb
 CORS_ORIGIN=http://localhost:5174
-DATABASE_URL=postgres://ommr:ommr_password@localhost:5433/ommr_admin
-```
 
-Для production можно заменить:
-
-- `DATABASE_URL` на реальную PostgreSQL строку;
-- `CORS_ORIGIN` на публичный домен frontend, например `https://admin.example.com`;
-- `PORT`/`HOST` на нужные значения инфраструктуры.
-
-### Frontend
-
-Файл: `apps/admin-frontend/.env.example`
-
-```env
 VITE_BACKEND_BASE_URL=/api/admin
 VITE_BACKEND_PROXY_TARGET=http://localhost:4000
 VITE_REFINE_DEVTOOLS=false
@@ -96,6 +94,13 @@ REFINE_NO_TELEMETRY=true
 VITE_HOST=0.0.0.0
 VITE_PORT=5174
 ```
+
+Для production можно заменить:
+
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` на реальные параметры PostgreSQL;
+- `DB_SSL` на `require`, если база требует SSL;
+- `CORS_ORIGIN` на публичный домен frontend, например `https://admin.example.com`;
+- `PORT`/`HOST` на нужные значения инфраструктуры.
 
 Рекомендация: оставлять `VITE_BACKEND_BASE_URL=/api/admin` и в dev/prod проксировать `/api` на backend. Если нужно ходить напрямую на backend, можно поставить полный URL, например `https://api.example.com/api/admin`, но тогда backend должен корректно отдавать CORS.
 
@@ -131,7 +136,8 @@ yarn db:migrate             # применить миграции
 yarn db:studio              # Drizzle Studio
 
 yarn docker:build           # docker build -t ommr-admin-platform .
-yarn docker:run             # docker run --rm --name ommr-admin-platform --env-file .env -p 5174:80 ommr-admin-platform
+yarn docker:run             # docker run --rm --name ommr-admin-platform --env-file .env.production -p 5174:80 ommr-admin-platform
+yarn docker:run:dev         # docker run --rm --name ommr-admin-platform --env-file .env.development -p 5174:80 ommr-admin-platform
 ```
 
 ## Структура
@@ -146,6 +152,8 @@ ommr-admin-platform
 ├── docker
 ├── Dockerfile
 ├── .env.example
+├── .env.development
+├── .env.production
 ├── package.json
 └── tsconfig.base.json
 ```

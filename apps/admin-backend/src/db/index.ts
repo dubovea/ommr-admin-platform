@@ -1,17 +1,9 @@
-import "dotenv/config";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { getDatabaseConfig } from "../config/database.js";
 import * as schema from "./schema.js";
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error(
-    "DATABASE_URL is required. Set it in .env and run Docker with --env-file .env, or export it before starting the backend.",
-  );
-}
-
-const client = postgres(databaseUrl);
+const client = postgres(getDatabaseConfig());
 
 export const db = drizzle(client, {
   schema,

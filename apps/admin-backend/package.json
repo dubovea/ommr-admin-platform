@@ -14,12 +14,11 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test ../../packages/shared/src/zod/index.test.ts src/services/pydantic-schema-parser.service.test.ts ../../apps/admin-frontend/src/lib/table-form-mappers.test.ts"
+    "test": "tsx --test src/services/pydantic-schema-parser.service.test.ts"
   },
   "dependencies": {
     "@ommr/shared": "workspace:*",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "express": "^5.1.0",
     "postgres": "^3.4.7",

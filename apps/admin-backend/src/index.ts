@@ -1,8 +1,7 @@
-import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import { adminRouter } from "./routes/admin/index.js";
 import { errorHandler } from "./middlewares/error-handler.js";
+import { adminRouter } from "./routes/admin/index.js";
 
 const app = express();
 

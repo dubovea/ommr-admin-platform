@@ -11,19 +11,28 @@
     "dev:shared": "yarn workspace @ommr/shared dev",
     "build:shared": "yarn workspace @ommr/shared build",
     "typecheck:shared": "yarn workspace @ommr/shared typecheck",
-    "dev:admin-backend": "yarn workspace @ommr/admin-backend dev",
+    "dev:admin-backend": "node --env-file=.env.development --watch --import tsx apps/admin-backend/src/index.ts",
     "build:admin-backend": "yarn workspace @ommr/shared build && yarn workspace @ommr/admin-backend build",
-    "start:admin-backend": "yarn workspace @ommr/admin-backend start",
+    "start:admin-backend": "node --env-file=.env.production apps/admin-backend/dist/index.js",
     "dev:admin-frontend": "yarn workspace @ommr/admin-frontend dev",
     "build:admin-frontend": "yarn workspace @ommr/shared build && yarn workspace @ommr/admin-frontend build",
     "preview:admin-frontend": "yarn workspace @ommr/admin-frontend preview",
     "build": "yarn build:shared && yarn workspace @ommr/admin-backend build && yarn workspace @ommr/admin-frontend build",
+    "seed": "node --env-file=.env.development --import tsx apps/admin-backend/src/seed.ts",
+    "db:reset": "node --env-file=.env.development --import tsx apps/admin-backend/src/scripts/db-reset.ts",
+    "db:generate": "node --env-file=.env.development node_modules/drizzle-kit/bin.cjs generate --config apps/admin-backend/drizzle.config.ts",
+    "db:migrate": "node --env-file=.env.development node_modules/drizzle-kit/bin.cjs migrate --config apps/admin-backend/drizzle.config.ts",
+    "db:push": "node --env-file=.env.development node_modules/drizzle-kit/bin.cjs push --config apps/admin-backend/drizzle.config.ts",
+    "db:studio": "node --env-file=.env.development node_modules/drizzle-kit/bin.cjs studio --config apps/admin-backend/drizzle.config.ts",
     "docker:build": "docker build -t ommr-admin-platform .",
-    "docker:run": "docker run --rm --name ommr-admin-platform --env-file .env -p 5174:80 ommr-admin-platform",
-    "test": "yarn build:shared && yarn workspace @ommr/admin-backend test",
+    "docker:run": "docker run --rm --name ommr-admin-platform --env-file .env.production -p 5174:80 ommr-admin-platform",
+    "docker:run:dev": "docker run --rm --name ommr-admin-platform --env-file .env.development -p 5174:80 ommr-admin-platform",
+    "test": "yarn build:shared && tsx --test packages/shared/src/zod/index.test.ts apps/admin-backend/src/services/pydantic-schema-parser.service.test.ts apps/admin-frontend/src/lib/table-form-mappers.test.ts",
     "typecheck": "yarn typecheck:shared && yarn workspace @ommr/admin-backend typecheck && yarn workspace @ommr/admin-frontend typecheck"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.3"
   }
 }
