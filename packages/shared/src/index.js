@@ -77,7 +77,7 @@ export const SIDEBAR_ITEMS = [
         id: "detail_tables",
         label: "Детальные таблицы",
         elements: [
-            { id: "shipments", label: "Отгрузка" },
+            { id: "shipments_input", label: "ОтгрузкаИсходные" },
             { id: "locos_inits", label: "ЛокомотивыНачало" },
             { id: "wagons_inits", label: "ВагоныНачало" },
             { id: "wagons_arrival", label: "ВагоныПоступление" },

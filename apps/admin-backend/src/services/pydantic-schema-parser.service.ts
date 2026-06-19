@@ -42,7 +42,7 @@ type JsonSchema = {
   type?: string | string[];
   format?: string;
   properties?: Record<string, JsonSchema>;
-  required?: boolean;
+  required?: boolean | string[];
   enum?: unknown[];
   default?: unknown;
   items?: JsonSchema;
@@ -130,7 +130,7 @@ export function parsePydanticJsonSchema(input: unknown): ParsedPydanticTable[] {
               dbType: getDbType(resolved, relation),
               inputType: relation ? "multiselect" : getInputType(resolved),
 
-              required: resolved.required ?? false,
+              required: getFieldRequired(fieldName, modelSchema, resolved),
               editable: fieldName !== "id" && !fieldName.endsWith("_at"),
               sortable: true,
               filterable: true,
@@ -305,6 +305,22 @@ function getRelation(schema: JsonSchema): FieldRelationInput | null {
   }
 
   return null;
+}
+
+function getFieldRequired(
+  fieldName: string,
+  modelSchema: JsonSchema,
+  fieldSchema: JsonSchema,
+): boolean {
+  if (typeof fieldSchema.required === "boolean") {
+    return fieldSchema.required;
+  }
+
+  if (Array.isArray(modelSchema.required)) {
+    return modelSchema.required.includes(fieldName);
+  }
+
+  return false;
 }
 
 function getOptions(schema: JsonSchema): FieldOption[] | null {

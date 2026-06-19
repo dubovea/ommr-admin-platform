@@ -1,0 +1,1566 @@
+{
+    "tables": [
+        {
+            "name": "load_racks_process",
+            "label": "ЭстакадыНалив",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "load_rack_code",
+                    "label": "Название эстакады",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "load_racks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "variant_code",
+                    "label": "Название варианта",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "variant_code",
+                        "targetTable": "load_rack_variants",
+                        "displayField": "variant_name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "time",
+                    "label": "Время операции, мин",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "locos_inits",
+            "label": "ЛокомотивыНачало",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Локомотив",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "locos",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                }
+            ]
+        },
+        {
+            "name": "locos_intransit",
+            "label": "ЛокомотивыВПути",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "date",
+                    "label": "Дата поступления",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "code",
+                    "label": "Код локомотива",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "locos",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "type_code",
+                    "label": "Код типа",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "wagon_types",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "cargo",
+                    "label": "Продукт",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "quantity",
+                    "label": "Количество",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "locos_shift_change",
+            "label": "ЛокомотивыСмена",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Локомотив",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "locos",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "from_time",
+                    "label": "Время начала",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "to_time",
+                    "label": "Время окончания",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "resource_unavailable",
+            "label": "РесурсНедоступность",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "type_code",
+                    "label": "Код типа",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "code",
+                    "label": "Код ресурса",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "from_date",
+                    "label": "Дата начала",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "to_date",
+                    "label": "Дата окончания",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "track",
+                    "label": "Код пути",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                }
+            ]
+        },
+        {
+            "name": "shipments_input",
+            "label": "ОтгрузкаИсходные",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Код",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "cargo_code",
+                    "label": "Продукт",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "type_code",
+                    "label": "Код типа вагона",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "wagon_types",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Код пути",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "volume",
+                    "label": "Объем (ваг)",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "priority",
+                    "label": "Приоритет",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "deactivated",
+                    "label": "Деактивировано",
+                    "inputType": "checkbox",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "shipments",
+            "label": "Результат Отгрузка",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "time",
+                    "label": "Время",
+                    "inputType": "datetime",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "period",
+                    "label": "Период",
+                    "inputType": "float",
+                    "visible": false,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "order",
+                    "label": "Заявка",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "shipments_input",
+                        "displayField": "code",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "cargo",
+                    "label": "Продукт",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "wagon_type",
+                    "label": "Тип вагона",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "wagon_types",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "quantity",
+                    "label": "Количество",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "wagons_arrival",
+            "label": "ВагоныПоступление",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "date",
+                    "label": "Дата поступления",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "type_code",
+                    "label": "Тип",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "wagon_types",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "cargo_code",
+                    "label": "Продукт",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "quantity",
+                    "label": "Количество",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "wagons_inits",
+            "label": "ВагоныНачало",
+            "group": "detail_tables",
+            "groupName": "Детальные таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "type_code",
+                    "label": "Тип",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "wagon_types",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "cargo_code",
+                    "label": "Продукт",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "quantity",
+                    "label": "Количество",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "cargoes",
+            "label": "Грузы",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Код",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "code_KSM",
+                    "label": "Код КСМ",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "name",
+                    "label": "Наименование",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "statweight",
+                    "label": "Статнагрузка",
+                    "inputType": "float",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "load_rack_variants",
+            "label": "ЭстакадыВарианты",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "load_rack_code",
+                    "label": "Эстакада",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "load_racks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "variant_code",
+                    "label": "Код варианта",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "variant_name",
+                    "label": "Название варианта",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "riser_count",
+                    "label": "Стояков",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "is_loading",
+                    "label": "Тип операции",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "load_time",
+                    "label": "Время операции (мин)",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "cargoes",
+                    "label": "Продукты",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                }
+            ]
+        },
+        {
+            "name": "load_racks",
+            "label": "Эстакады",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Код",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "name",
+                    "label": "Название эстакады",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "locos",
+            "label": "Локомотивы",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Код",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "name",
+                    "label": "Название локомотива",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "locos_manevours",
+            "label": "МаневровыеРайоны",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Локомотив",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "locos",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "maneuvours",
+                    "label": "Маневровый район",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                }
+            ]
+        },
+        {
+            "name": "operation_time",
+            "label": "ВремяОпераций",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Код",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "name",
+                    "label": "Название",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "time",
+                    "label": "Время (мин)",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "tracks",
+            "label": "Пути",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Код",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "name",
+                    "label": "Название",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "length",
+                    "label": "Длина (м)",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "capacity",
+                    "label": "Вместимость (ваг)",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "weigh_code",
+                    "label": "Код весов",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "weigh_name",
+                    "label": "Название весов",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "tracks_links",
+            "label": "ПутиСвязи",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "from",
+                    "label": "Путь1",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "to",
+                    "label": "Путь2",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "switch",
+                    "label": "Стрелка",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "operation",
+                    "label": "Операция",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "move_speed",
+                    "label": "Скорость движения",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "move_time",
+                    "label": "Время движения",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": false,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "wagon_types",
+            "label": "ТипыВагонов",
+            "group": "master_tables",
+            "groupName": "Мастер-таблицы",
+            "showInMenu": true,
+            "fields": [
+                {
+                    "name": "code",
+                    "label": "Код",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "name",
+                    "label": "Название",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "length",
+                    "label": "Длина вагона",
+                    "inputType": "integer",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "cargoes",
+                    "label": "Продукты",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                }
+            ]
+        },
+        {
+            "name": "legs",
+            "label": "Плечи маршрута",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "time",
+                    "label": "Время начала",
+                    "inputType": "datetime",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "period",
+                    "label": "Период",
+                    "inputType": "float",
+                    "visible": false,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "arrive_time",
+                    "label": "Время окончания",
+                    "inputType": "datetime",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "arrive",
+                    "label": "Период окончания",
+                    "inputType": "float",
+                    "visible": false,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "from",
+                    "label": "Откуда",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "to",
+                    "label": "Куда",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "cargoes",
+                    "label": "Состав",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "load_racks_loading",
+            "label": "Результаты Эстакад",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "time",
+                    "label": "Время начала",
+                    "inputType": "datetime",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "period",
+                    "label": "Период начала",
+                    "inputType": "float",
+                    "visible": false,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "time_end",
+                    "label": "Время окончания",
+                    "inputType": "datetime",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "period_end",
+                    "label": "Период окончания",
+                    "inputType": "float",
+                    "visible": false,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "load_rack",
+                    "label": "Эстакада",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "load_racks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "variant",
+                    "label": "Вариант эстакады",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "variant_code",
+                        "targetTable": "load_rack_variants",
+                        "displayField": "variant_name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "track",
+                    "label": "Путь",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "type",
+                    "label": "Тип операции",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": false,
+                    "editable": false,
+                    "relation": null
+                },
+                {
+                    "name": "load_length",
+                    "label": "Время налива",
+                    "inputType": "float",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "loading_daily",
+            "label": "Суточная загрузка эстакад",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "load_rack",
+                    "label": "Эстакада",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "load_racks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "cargo",
+                    "label": "Груз",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "day",
+                    "label": "Дата",
+                    "inputType": "date",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "volume",
+                    "label": "Объем",
+                    "inputType": "float",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "loco_routes",
+            "label": "Маршруты локомотивов",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "loco_code",
+                    "label": "Локомотив",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "locos",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "movements",
+                    "label": "Результат Локомотивы",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "movements",
+            "label": "Результат Локомотивы",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "time",
+                    "label": "Время начала",
+                    "inputType": "datetime",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "period",
+                    "label": "Период",
+                    "inputType": "float",
+                    "visible": false,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "arrive_time",
+                    "label": "Время окончания",
+                    "inputType": "datetime",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "arrive",
+                    "label": "Период окончания",
+                    "inputType": "float",
+                    "visible": false,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "from",
+                    "label": "Откуда",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "to",
+                    "label": "Куда",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "tracks",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "loco",
+                    "label": "Локомотив",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "locos",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "cargoes",
+                    "label": "Грузы",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "cargoes",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                }
+            ]
+        },
+        {
+            "name": "routes",
+            "label": "Маршруты",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "loco",
+                    "label": "Локомотив",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": {
+                        "targetKey": "code",
+                        "targetTable": "locos",
+                        "displayField": "name",
+                        "additionalText": null
+                    }
+                },
+                {
+                    "name": "legs",
+                    "label": "Плечи маршрута",
+                    "inputType": "multiselect",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        },
+        {
+            "name": "shipments_daily",
+            "label": "Суточная отгрузка",
+            "group": null,
+            "groupName": null,
+            "showInMenu": false,
+            "fields": [
+                {
+                    "name": "cargo",
+                    "label": "Груз",
+                    "inputType": "text",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "day",
+                    "label": "Дата",
+                    "inputType": "date",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                },
+                {
+                    "name": "volume",
+                    "label": "Объем",
+                    "inputType": "float",
+                    "visible": true,
+                    "required": true,
+                    "editable": true,
+                    "relation": null
+                }
+            ]
+        }
+    ],
+    "menu": [
+        {
+            "id": "detail_tables",
+            "label": "Детальные таблицы",
+            "elements": [
+                {
+                    "id": "load_racks_process",
+                    "label": "ЭстакадыНалив"
+                },
+                {
+                    "id": "locos_inits",
+                    "label": "ЛокомотивыНачало"
+                },
+                {
+                    "id": "locos_intransit",
+                    "label": "ЛокомотивыВПути"
+                },
+                {
+                    "id": "locos_shift_change",
+                    "label": "ЛокомотивыСмена"
+                },
+                {
+                    "id": "resource_unavailable",
+                    "label": "РесурсНедоступность"
+                },
+                {
+                    "id": "shipments_input",
+                    "label": "ОтгрузкаИсходные"
+                },
+                {
+                    "id": "wagons_arrival",
+                    "label": "ВагоныПоступление"
+                },
+                {
+                    "id": "wagons_inits",
+                    "label": "ВагоныНачало"
+                }
+            ]
+        },
+        {
+            "id": "master_tables",
+            "label": "Мастер-таблицы",
+            "elements": [
+                {
+                    "id": "cargoes",
+                    "label": "Грузы"
+                },
+                {
+                    "id": "load_rack_variants",
+                    "label": "ЭстакадыВарианты"
+                },
+                {
+                    "id": "load_racks",
+                    "label": "Эстакады"
+                },
+                {
+                    "id": "locos",
+                    "label": "Локомотивы"
+                },
+                {
+                    "id": "locos_manevours",
+                    "label": "МаневровыеРайоны"
+                },
+                {
+                    "id": "operation_time",
+                    "label": "ВремяОпераций"
+                },
+                {
+                    "id": "tracks",
+                    "label": "Пути"
+                },
+                {
+                    "id": "tracks_links",
+                    "label": "ПутиСвязи"
+                },
+                {
+                    "id": "wagon_types",
+                    "label": "ТипыВагонов"
+                }
+            ]
+        }
+    ]
+}
